@@ -205,6 +205,12 @@
   line-height: 1.2;
 }
 
+.tp.is-left .tp-label {
+  left: auto;
+  right: 20px;
+  text-align: right;
+}
+
 .tp-label strong {
   font-size: 13px;
   font-weight: 650;

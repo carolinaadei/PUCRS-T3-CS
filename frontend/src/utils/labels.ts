@@ -50,14 +50,6 @@ export const CATEGORIA_ATIVIDADE: Record<CategoriaAtividade, string> = {
   outro: 'Outro',
 };
 
-export const CATEGORIA_ATIVIDADE_COR: Record<CategoriaAtividade, string> = {
-  passeio: '#0a84ff',
-  refeicao: '#13a9a4',
-  hospedagem: '#1fbf6a',
-  transporte: '#5e9cff',
-  outro: '#8aa0b4',
-};
-
 /** Como a viagem foi pensada. O backend não guarda este dado; fica neste navegador. */
 export type TipoViagem = 'individual' | 'amigos' | 'familia';
 

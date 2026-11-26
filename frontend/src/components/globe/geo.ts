@@ -113,6 +113,8 @@ export function enquadrar(pontos: { lat: number; lng: number }[]): {
   const lng = Math.atan2(y, x) / rad;
   const lat = Math.atan2(z, Math.sqrt(x * x + y * y)) / rad;
   const maior = Math.max(...pontos.map((p) => distanciaAngular(lat, lng, p.lat, p.lng)));
-  const altitude = Math.min(3, Math.max(1.1, 0.9 + maior / 28));
+  // Paradas próximas (ex.: Orlando e Miami) pedem zoom maior para os pinos não colidirem.
+  const altitude =
+    pontos.length === 1 ? 1.1 : Math.min(3, Math.max(0.32, 0.22 + maior / 16));
   return { lat, lng, altitude };
 }

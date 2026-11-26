@@ -10,6 +10,7 @@ import './styles/components.css';
 import './styles/layout.css';
 import './styles/globe.css';
 import './styles/pages.css';
+import './styles/trips.css';
 import { ApiError } from './api/client';
 import { AuthProvider } from './state/auth';
 import { ToastProvider } from './state/toast';

@@ -268,7 +268,8 @@ interface Arco {
 
 function criarPino(parada: ParadaGlobo): HTMLElement {
   const raiz = document.createElement('div');
-  raiz.className = 'tp';
+  // Rótulos alternam de lado para paradas vizinhas não se sobreporem.
+  raiz.className = parada.ordem % 2 === 0 ? 'tp is-left' : 'tp';
   const numero = document.createElement('span');
   numero.className = 'tp-num';
   numero.textContent = String(parada.ordem);
