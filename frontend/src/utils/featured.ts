@@ -57,6 +57,10 @@ export const LUGARES_INSPIRACAO: LugarGlobo[] = [
   { chave: 'istambul', nome: 'Istambul', pais: 'TR', lat: 41.0082, lng: 28.9784, foto: commons('4/4a/Hagia_Sophia_%28228968325%29.jpeg') },
   { chave: 'antalya', nome: 'Antalya', pais: 'TR', lat: 36.8969, lng: 30.7133, foto: commons('7/75/Antalya_kalei%C3%A7i_2.jpg') },
   { chave: 'kuala-lumpur', nome: 'Kuala Lumpur', pais: 'MY', lat: 3.139, lng: 101.6869, foto: commons('8/8f/Batu_Caves_stairs_2022-05.jpg') },
+  // As fotos de Miami e Orlando do seed são miniaturas da busca do Google, que algumas
+  // redes bloqueiam; estas, do Commons, são usadas no lugar quando o nome coincide.
+  { chave: 'miami', nome: 'Miami', pais: 'US', lat: 25.7617, lng: -80.1918, foto: commons('a/a5/Miami%2C_Florida%2C_Skyline_4.jpg') },
+  { chave: 'orlando', nome: 'Orlando', pais: 'US', lat: 28.5383, lng: -81.3792, foto: commons('9/96/Lakeeola_09232006_trees.jpg') },
 ];
 
 /**
@@ -68,7 +72,12 @@ export function paisDoLugar(lugar: { nome: string; pais: string }): string | nul
   return nome && nome !== lugar.nome ? nome : null;
 }
 
-/** Destinos populares exibidos abaixo da busca, nesta ordem. */
+/** Foto maior de um lugar do globo, para cartões: 960 px no Commons, “grande” no Unsplash. */
+export function fotoGrandeDoLugar(lugar: LugarGlobo): string {
+  return lugar.foto.replace('/330px-', '/960px-').replace('w=480&h=360', 'w=1600&h=900');
+}
+
+/** Destinos populares (ranking da página inicial), nesta ordem; os 4 primeiros vão junto da busca. */
 export const POPULARES = [
   'bangkok',
   'hong-kong',
@@ -143,9 +152,12 @@ export function montarLugaresGlobo(catalogo: DestinoParaGlobo[]): LugarGlobo[] {
 
 const FOTO_POR_NOME = new Map(LUGARES_INSPIRACAO.map((l) => [normalizar(l.nome), l.foto]));
 
-/** Foto para um destino do catálogo: a do backend, ou a de inspiração com o mesmo nome. */
+/**
+ * Foto para um destino do catálogo. Se há um lugar de inspiração com o mesmo nome,
+ * usa a foto dele (verificada e, no caso do Unsplash, embutida); senão, a do backend.
+ */
 export function fotoDoDestino(nome: string, fotoUrl: string | null | undefined): string | null {
-  return fotoUrl || FOTO_POR_NOME.get(normalizar(nome)) || null;
+  return FOTO_POR_NOME.get(normalizar(nome)) || fotoUrl || null;
 }
 
 /**
@@ -168,7 +180,9 @@ const FOTOS_LOCAIS = new Set([
   '1502602898657-3e91760cbb34-mini.jpg',
   '1506973035872-a4ec16b8e8d9-mini.jpg',
   '1511895426328-dc8714191300-grande.jpg',
+  '1512453979798-5ea266f8880c-grande.jpg',
   '1512453979798-5ea266f8880c-mini.jpg',
+  '1513635269975-59663e0ac1ad-grande.jpg',
   '1513635269975-59663e0ac1ad-mini.jpg',
   '1523906834658-6e24ef2386f9-mini.jpg',
   '1524492412937-b28074a5d7da-mini.jpg',
@@ -207,7 +221,7 @@ export function resolverFoto(url: string | null | undefined): string | null | un
 
 /** Versão em alta resolução, quando o destino coincide com um lugar de inspiração. */
 export function fotoGrandeDoDestino(nome: string, fotoUrl: string | null | undefined): string | null {
-  const inspiracao = FOTO_POR_NOME.get(normalizar(nome));
-  if (inspiracao) return inspiracao.replace('w=480&h=360', 'w=1600&h=900');
+  const inspiracao = LUGARES_INSPIRACAO.find((l) => normalizar(l.nome) === normalizar(nome));
+  if (inspiracao) return fotoGrandeDoLugar(inspiracao);
   return fotoUrl || null;
 }
