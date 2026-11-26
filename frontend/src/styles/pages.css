@@ -136,11 +136,6 @@
   flex: none;
 }
 
-.globe-caption-link {
-  margin-left: 10px;
-  font-weight: 600;
-}
-
 @media (max-width: 960px) {
   .hero-grid {
     grid-template-columns: minmax(0, 1fr);

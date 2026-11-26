@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
   CalendarDays,
-  Compass,
   Heart,
   MapPin,
   PiggyBank,
@@ -23,6 +22,8 @@ import { countryName } from '../utils/format';
 import {
   FOTOS,
   LUGARES_INSPIRACAO,
+  POPULARES,
+  paisDoLugar,
   fotoDoDestino,
   montarLugaresGlobo,
   type LugarGlobo,
@@ -38,6 +39,7 @@ function Hero() {
   const { usuario } = useAuth();
   const [busca, setBusca] = useState('');
   const [ativo, setAtivo] = useState<LugarGlobo | null>(null);
+  const [foco, setFoco] = useState<{ lugar: LugarGlobo; seq: number } | null>(null);
 
   const destinos = useQuery({
     queryKey: ['catalogo', 'destinos', 'globo'],
@@ -56,21 +58,18 @@ function Hero() {
     navigate(q ? `/explorar?q=${encodeURIComponent(q)}` : '/explorar');
   };
 
-  const sugestoes = destinos.data?.itens.slice(0, 4) ?? [];
-
   return (
     <section className="hero">
       <div className="container hero-grid">
         <div className="hero-copy">
-          <span className="eyebrow">Planejamento de viagens colaborativo</span>
           <h1 className="large-title">
             Planeje junto.
             <br />
             <span className="gradient-text">Viaje melhor.</span>
           </h1>
           <p className="hero-sub secondary">
-            Monte roteiros com várias paradas, organize atividades e orçamento e convide amigos e
-            família para planejar com você — tudo num só lugar.
+            Crie roteiros de viagem com múltiplas paradas, organize atividades e orçamentos e
+            convide amigos e familiares para planejar tudo junto com você.
           </p>
 
           <Glass as="form" className="hero-search" onSubmit={buscar} role="search">
@@ -91,24 +90,25 @@ function Hero() {
             </button>
           </Glass>
 
-          {sugestoes.length > 0 && (
-            <p className="footnote secondary hero-popular">
-              Populares:{' '}
-              {sugestoes.map((d, i) => (
-                <span key={d.id}>
-                  {i > 0 && ' · '}
-                  <Link to={`/explorar/destinos/${d.id}`}>{d.nome}</Link>
-                </span>
-              ))}
-            </p>
-          )}
+          <div className="row wrap gap-2" role="group" aria-label="Destinos populares">
+            <span className="footnote tertiary">Populares:</span>
+            {POPULARES.map((lugar) => (
+              <button
+                key={lugar.chave}
+                type="button"
+                className="chip chip-link"
+                title={[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')}
+                aria-label={`Mostrar ${[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')} no globo`}
+                onClick={() => setFoco({ lugar, seq: Date.now() })}
+              >
+                <MapPin aria-hidden /> {lugar.nome}
+              </button>
+            ))}
+          </div>
 
           <div className="row wrap gap-3 hero-ctas">
             <Link to={usuario ? '/viagens' : '/cadastro'} className="btn btn-brand btn-lg">
               {usuario ? 'Ir para minhas viagens' : 'Começar a planejar'} <ArrowRight />
-            </Link>
-            <Link to="/explorar" className="btn btn-plain btn-lg">
-              <Compass /> Ver destinos
             </Link>
           </div>
         </div>
@@ -117,6 +117,7 @@ function Hero() {
           <Suspense fallback={<GlobePlaceholder />}>
             <ExploreGlobe
               lugares={lugares}
+              foco={foco}
               onAtivoChange={setAtivo}
               onSelect={(l) => l.destinoId && navigate(`/explorar/destinos/${l.destinoId}`)}
             />
@@ -126,12 +127,7 @@ function Hero() {
             {ativo ? (
               <span className="subhead">
                 <strong>{ativo.nome}</strong>
-                <span className="secondary"> · {countryName(ativo.pais)}</span>
-                {ativo.destinoId && (
-                  <Link to={`/explorar/destinos/${ativo.destinoId}`} className="globe-caption-link">
-                    Ver destino
-                  </Link>
-                )}
+                {paisDoLugar(ativo) && <span className="secondary"> · {paisDoLugar(ativo)}</span>}
               </span>
             ) : (
               <span className="subhead secondary">Gire o globo para descobrir lugares</span>
