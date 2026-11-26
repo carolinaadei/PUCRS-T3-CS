@@ -20,6 +20,12 @@ export function unsplash(id: string, w = 480, h = 360): string {
   return `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&fit=crop&q=70&auto=format`;
 }
 
+/** Miniatura de 330 px de um arquivo do Wikimedia Commons (caminho "a/ab/Arquivo.jpg"). */
+function commons(caminho: string): string {
+  const arquivo = caminho.split('/').pop();
+  return `https://upload.wikimedia.org/wikipedia/commons/thumb/${caminho}/330px-${arquivo}`;
+}
+
 export const LUGARES_INSPIRACAO: LugarGlobo[] = [
   { chave: 'paris', nome: 'Paris', pais: 'FR', lat: 48.8566, lng: 2.3522, foto: unsplash('1502602898657-3e91760cbb34') },
   { chave: 'londres', nome: 'Londres', pais: 'GB', lat: 51.5074, lng: -0.1278, foto: unsplash('1513635269975-59663e0ac1ad') },
@@ -42,7 +48,28 @@ export const LUGARES_INSPIRACAO: LugarGlobo[] = [
   { chave: 'nova-york', nome: 'Nova York', pais: 'US', lat: 40.7128, lng: -74.006, foto: unsplash('1496442226666-8d4d0e62e6e9') },
   { chave: 'machu-picchu', nome: 'Machu Picchu', pais: 'PE', lat: -13.1631, lng: -72.545, foto: unsplash('1587595431973-160d0d94add1') },
   { chave: 'rio-de-janeiro', nome: 'Rio de Janeiro', pais: 'BR', lat: -22.9068, lng: -43.1729, foto: unsplash('1483729558449-99ef09a8c325') },
+  // Miniaturas de 330 px do Wikimedia Commons (tamanho já em cache no CDN).
+  { chave: 'bangkok', nome: 'Bangkok', pais: 'TH', lat: 13.7563, lng: 100.5018, foto: commons('2/2a/%E0%B9%80%E0%B8%88%E0%B8%94%E0%B8%B5%E0%B8%A2%E0%B9%8C%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%98%E0%B8%B2%E0%B8%99%E0%B8%97%E0%B8%A3%E0%B8%87%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%87%E0%B8%84%E0%B9%8C%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B8%AD%E0%B8%A3%E0%B8%B8%E0%B8%932.jpg') },
+  { chave: 'hong-kong', nome: 'Hong Kong', pais: 'HK', lat: 22.3193, lng: 114.1694, foto: commons('a/a4/Hong_Kong_Harbour_Night_2019-06-11.jpg') },
+  { chave: 'macau', nome: 'Macau', pais: 'MO', lat: 22.1987, lng: 113.5439, foto: commons('f/fc/%E5%A4%A7%E4%B8%89%E5%B7%B4%E7%89%8C%E5%9D%8A.jpg') },
+  { chave: 'istambul', nome: 'Istambul', pais: 'TR', lat: 41.0082, lng: 28.9784, foto: commons('4/4a/Hagia_Sophia_%28228968325%29.jpeg') },
+  { chave: 'antalya', nome: 'Antalya', pais: 'TR', lat: 36.8969, lng: 30.7133, foto: commons('7/75/Antalya_kalei%C3%A7i_2.jpg') },
+  { chave: 'kuala-lumpur', nome: 'Kuala Lumpur', pais: 'MY', lat: 3.139, lng: 101.6869, foto: commons('8/8f/Batu_Caves_stairs_2022-05.jpg') },
 ];
+
+/** Destinos populares exibidos abaixo da busca, nesta ordem. */
+export const POPULARES = [
+  'bangkok',
+  'hong-kong',
+  'londres',
+  'macau',
+  'istambul',
+  'dubai',
+  'antalya',
+  'paris',
+  'kuala-lumpur',
+  'nova-york',
+].map((chave) => LUGARES_INSPIRACAO.find((l) => l.chave === chave)!);
 
 /** Fotos das seções de apresentação (verificadas manualmente). */
 export const FOTOS = {
