@@ -274,7 +274,7 @@
 
 @media (max-width: 560px) {
   .form-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -423,6 +423,16 @@ button.chip:active {
 
 .list-row + .list-row {
   border-top: 1px solid var(--separator);
+}
+
+@media (max-width: 560px) {
+  .list-row {
+    flex-wrap: wrap;
+  }
+
+  .list-row > .stack.grow {
+    flex-basis: calc(100% - 60px);
+  }
 }
 
 .media {

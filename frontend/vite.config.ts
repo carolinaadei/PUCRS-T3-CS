@@ -33,7 +33,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      chunkSizeWarningLimit: 2000,
+      // O único pedaço grande é o do globo (three.js + H3), carregado sob demanda
+      // com React.lazy; o bundle principal fica em ~105 kB gzip.
+      chunkSizeWarningLimit: 2200,
     },
   };
 });
