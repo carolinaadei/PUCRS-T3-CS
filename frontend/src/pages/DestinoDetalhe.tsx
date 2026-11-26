@@ -177,16 +177,6 @@ export default function DestinoDetalhe() {
               </Suspense>
             </Glass>
           )}
-          <Glass className="card-pad stack gap-3">
-            <h2 className="headline">Planeje por aqui</h2>
-            <p className="subhead secondary">
-              Adicione {d.nome} ao roteiro de uma viagem e escolha depois quais atividades fazer em
-              cada dia.
-            </p>
-            <button type="button" className="btn btn-secondary" onClick={adicionar}>
-              <Plus /> Adicionar parada
-            </button>
-          </Glass>
         </aside>
       </div>
 

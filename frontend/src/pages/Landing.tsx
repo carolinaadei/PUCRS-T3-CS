@@ -14,17 +14,16 @@ import {
   User,
   UserPlus,
   Users,
-  UsersRound,
 } from 'lucide-react';
 import { catalogoApi } from '../api/endpoints';
 import { ExploreGlobe } from '../components/globe';
-import { Glass, Photo } from '../components/ui';
+import { Glass, Photo, Segmented } from '../components/ui';
 import { useAuth } from '../state/auth';
-import { countryName, formatMoney } from '../utils/format';
+import { countryName } from '../utils/format';
 import {
   FOTOS,
   LUGARES_INSPIRACAO,
-  fotoGrandeDoDestino,
+  fotoDoDestino,
   montarLugaresGlobo,
   type LugarGlobo,
 } from '../utils/featured';
@@ -93,21 +92,22 @@ function Hero() {
           </Glass>
 
           {sugestoes.length > 0 && (
-            <div className="row wrap gap-2" aria-label="Destinos populares">
-              <span className="footnote tertiary">Populares:</span>
-              {sugestoes.map((d) => (
-                <Link key={d.id} to={`/explorar/destinos/${d.id}`} className="chip chip-link">
-                  <MapPin aria-hidden /> {d.nome}
-                </Link>
+            <p className="footnote secondary hero-popular">
+              Populares:{' '}
+              {sugestoes.map((d, i) => (
+                <span key={d.id}>
+                  {i > 0 && ' · '}
+                  <Link to={`/explorar/destinos/${d.id}`}>{d.nome}</Link>
+                </span>
               ))}
-            </div>
+            </p>
           )}
 
           <div className="row wrap gap-3 hero-ctas">
             <Link to={usuario ? '/viagens' : '/cadastro'} className="btn btn-brand btn-lg">
               {usuario ? 'Ir para minhas viagens' : 'Começar a planejar'} <ArrowRight />
             </Link>
-            <Link to="/explorar" className="btn btn-glass btn-lg">
+            <Link to="/explorar" className="btn btn-plain btn-lg">
               <Compass /> Ver destinos
             </Link>
           </div>
@@ -143,54 +143,63 @@ function Hero() {
   );
 }
 
-const JEITOS = [
-  {
-    chave: 'individual',
-    titulo: 'Individual',
-    icone: User,
-    foto: FOTOS.individual,
-    texto: 'Seu ritmo, suas escolhas. Organize cada parada e acompanhe o orçamento sem planilhas.',
-  },
-  {
-    chave: 'amigos',
-    titulo: 'Amigos',
-    icone: Users,
-    foto: FOTOS.amigos,
-    texto: 'Todo mundo vê o mesmo roteiro. Editores ajustam, o resto acompanha e avalia.',
-  },
-  {
-    chave: 'familia',
-    titulo: 'Família',
-    icone: Heart,
-    foto: FOTOS.familia,
-    texto: 'Do avô ao caçula: compartilhe datas, hospedagens e atividades com quem vai junto.',
-  },
-] as const;
+type Jeito = 'individual' | 'amigos' | 'familia';
 
+const JEITOS: Record<Jeito, { titulo: string; foto: string; texto: string; pontos: string[] }> = {
+  individual: {
+    titulo: 'No seu ritmo.',
+    foto: FOTOS.individual,
+    texto: 'Organize cada parada e acompanhe o orçamento sem planilhas.',
+    pontos: ['Roteiro com várias cidades', 'Agenda por dia', 'Saldo do orçamento sempre à vista'],
+  },
+  amigos: {
+    titulo: 'Todo mundo no mesmo roteiro.',
+    foto: FOTOS.amigos,
+    texto: 'Convide a turma por email. Quem edita ajusta o plano; quem acompanha avalia os passeios.',
+    pontos: ['Convites por email', 'Editores e visualizadores', 'Avisos quando algo muda'],
+  },
+  familia: {
+    titulo: 'Do avô ao caçula.',
+    foto: FOTOS.familia,
+    texto: 'Datas, hospedagens e atividades num só lugar, visíveis para quem vai junto.',
+    pontos: ['Estadias em cada parada', 'Custos por tipo de atividade', 'Mapa da rota no globo'],
+  },
+};
+
+/** Um único painel com seletor no lugar de três cartões. */
 function JeitosDeViajar() {
+  const [jeito, setJeito] = useState<Jeito>('amigos');
+  const j = JEITOS[jeito];
   return (
     <section className="section">
       <div className="container">
-        <div className="section-head">
+        <div className="section-head section-head-center">
           <span className="eyebrow">Para cada jeito de viajar</span>
           <h2 className="title-1">Sozinho, com a turma ou em família.</h2>
-          <p className="secondary section-lead">
-            A mesma viagem, vista por todos. Você decide quem edita e quem só acompanha.
-          </p>
+          <Segmented<Jeito>
+            label="Jeito de viajar"
+            value={jeito}
+            onChange={setJeito}
+            options={[
+              { value: 'individual', label: 'Individual', icon: <User aria-hidden /> },
+              { value: 'amigos', label: 'Amigos', icon: <Users aria-hidden /> },
+              { value: 'familia', label: 'Família', icon: <Heart aria-hidden /> },
+            ]}
+          />
         </div>
-        <div className="jeitos-grid">
-          {JEITOS.map(({ chave, titulo, icone: Icone, foto, texto }) => (
-            <article key={chave} className="jeito-card">
-              <Photo src={foto} alt="" className="jeito-photo" />
-              <Glass className="jeito-caption">
-                <span className="jeito-icon">
-                  <Icone aria-hidden />
-                </span>
-                <h3 className="title-3">{titulo}</h3>
-                <p className="subhead">{texto}</p>
-              </Glass>
-            </article>
-          ))}
+        <div className="feature" key={jeito}>
+          <Photo src={j.foto} alt="" className="feature-photo" />
+          <div className="feature-copy stack gap-4">
+            <h3 className="title-2">{j.titulo}</h3>
+            <p className="secondary section-lead">{j.texto}</p>
+            <ul className="checklist">
+              {j.pontos.map((p) => (
+                <li key={p} className="subhead">
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -201,44 +210,40 @@ const PASSOS = [
   {
     icone: CalendarDays,
     titulo: 'Crie a viagem',
-    texto: 'Dê um nome, escolha as datas e acompanhe o status: planejando, confirmada ou concluída.',
+    texto: 'Nome, datas e status: planejando, confirmada ou concluída.',
   },
   {
     icone: Route,
     titulo: 'Monte o roteiro',
-    texto: 'Adicione paradas do catálogo, defina estadias e reorganize a ordem de visita.',
+    texto: 'Paradas do catálogo, estadias e ordem de visita.',
   },
   {
     icone: UserPlus,
     titulo: 'Convide quem vai',
-    texto: 'Envie convites por email. Cada pessoa entra como editora ou visualizadora.',
+    texto: 'Convites por email, como editor ou visualizador.',
   },
   {
     icone: PiggyBank,
     titulo: 'Controle os custos',
-    texto: 'Defina um orçamento e veja o saldo e o peso de cada categoria em tempo real.',
+    texto: 'Orçamento, saldo e o peso de cada categoria.',
   },
 ];
 
+/** Passos em lista aberta, sem caixas. */
 function ComoFunciona() {
   return (
-    <section className="section how">
+    <section className="section">
       <div className="container">
         <div className="section-head">
           <span className="eyebrow">Como funciona</span>
           <h2 className="title-1">Do primeiro rascunho ao embarque.</h2>
         </div>
-        <ol className="steps">
-          {PASSOS.map(({ icone: Icone, titulo, texto }, i) => (
+        <ol className="steps-plain">
+          {PASSOS.map(({ icone: Icone, titulo, texto }) => (
             <li key={titulo}>
-              <Glass className="step" interactive>
-                <span className="step-num caption tabular">0{i + 1}</span>
-                <span className="step-icon">
-                  <Icone aria-hidden />
-                </span>
-                <h3 className="headline">{titulo}</h3>
-                <p className="subhead secondary">{texto}</p>
-              </Glass>
+              <Icone aria-hidden className="steps-plain-icon" />
+              <h3 className="headline">{titulo}</h3>
+              <p className="subhead secondary">{texto}</p>
             </li>
           ))}
         </ol>
@@ -247,48 +252,7 @@ function ComoFunciona() {
   );
 }
 
-function Vitrine() {
-  return (
-    <section className="section">
-      <div className="container">
-        <div className="showcase">
-          <Photo src={FOTOS.lago} alt="Lago entre montanhas com um barco a remo" className="showcase-photo" />
-          <div className="showcase-overlay">
-            <Glass lg className="showcase-card showcase-a">
-              <span className="caption secondary">Roteiro</span>
-              <div className="showcase-route">
-                <span>Orlando</span>
-                <ArrowRight aria-hidden />
-                <span>Miami</span>
-              </div>
-              <span className="footnote secondary">26 dez – 6 jan · 12 dias</span>
-            </Glass>
-            <Glass lg className="showcase-card showcase-b">
-              <div className="row between">
-                <span className="caption secondary">Orçamento</span>
-                <span className="chip chip-green">Dentro do previsto</span>
-              </div>
-              <span className="title-3 tabular">{formatMoney(4080, true)}</span>
-              <div className="progress" aria-hidden>
-                <span style={{ width: '68%' }} />
-              </div>
-              <span className="footnote secondary">68% de {formatMoney(6000, true)}</span>
-            </Glass>
-            <Glass lg className="showcase-card showcase-c">
-              <span className="caption secondary">Quem vai</span>
-              <div className="row gap-2">
-                <UsersRound aria-hidden className="showcase-icon" />
-                <span className="headline">Ana, Bruno e Carla</span>
-              </div>
-              <span className="footnote secondary">1 organizadora · 1 editor · 1 visualizadora</span>
-            </Glass>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
+/** Ranking como lista numerada, em vez de cartões com foto. */
 function Ranking() {
   const ranking = useQuery({
     queryKey: ['catalogo', 'ranking'],
@@ -307,44 +271,36 @@ function Ranking() {
             <span className="eyebrow">Mais bem avaliados</span>
             <h2 className="title-1">Destinos que os viajantes amaram.</h2>
           </div>
-          <Link to="/explorar" className="btn btn-secondary">
+          <Link to="/explorar" className="btn btn-plain">
             Ver todos <ArrowRight />
           </Link>
         </div>
-        <div className="dest-grid">
-          {ranking.isLoading &&
-            Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="skeleton" style={{ aspectRatio: '4 / 5' }} />
-            ))}
+        {ranking.isLoading && <div className="skeleton" style={{ height: 160 }} />}
+        <ol className="rank-list">
           {itens.map((item) => (
-            <Link
-              key={item.destino.id}
-              to={`/explorar/destinos/${item.destino.id}`}
-              className="dest-card"
-            >
-              <Photo
-                src={fotoGrandeDoDestino(item.destino.nome, item.destino.foto_url)}
-                alt={item.destino.nome}
-                className="dest-card-photo"
-              />
-              <span className="dest-rank chip chip-glass">#{item.posicao}</span>
-              <Glass className="dest-card-info">
-                <div className="row between gap-2">
-                  <h3 className="headline truncate">{item.destino.nome}</h3>
-                  <span className="row gap-1 footnote">
-                    <Star aria-hidden className="star-inline" fill="currentColor" />
-                    <strong className="tabular">{item.media_avaliacoes.toFixed(1)}</strong>
+            <li key={item.destino.id}>
+              <Link to={`/explorar/destinos/${item.destino.id}`} className="rank-row">
+                <span className="rank-pos tabular">{item.posicao}</span>
+                <Photo
+                  src={fotoDoDestino(item.destino.nome, item.destino.foto_url)}
+                  alt=""
+                  className="rank-thumb"
+                />
+                <span className="stack grow" style={{ minWidth: 0 }}>
+                  <strong className="headline truncate">{item.destino.nome}</strong>
+                  <span className="footnote secondary truncate">
+                    {countryName(item.destino.pais_codigo)} · {CATEGORIA_DESTINO[item.destino.categoria]}
                   </span>
-                </div>
-                <span className="footnote secondary truncate">
-                  {countryName(item.destino.pais_codigo)} · {CATEGORIA_DESTINO[item.destino.categoria]}{' '}
-                  · {item.total_avaliacoes}{' '}
-                  {item.total_avaliacoes === 1 ? 'avaliação' : 'avaliações'}
                 </span>
-              </Glass>
-            </Link>
+                <span className="row gap-1 subhead" style={{ flex: 'none' }}>
+                  <Star aria-hidden className="star-inline" fill="currentColor" />
+                  <strong className="tabular">{item.media_avaliacoes.toFixed(1)}</strong>
+                  <span className="footnote tertiary">({item.total_avaliacoes})</span>
+                </span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );
@@ -353,17 +309,16 @@ function Ranking() {
 function ChamadaFinal() {
   const { usuario } = useAuth();
   return (
-    <section className="section" style={{ paddingTop: 0 }}>
-      <div className="container">
-        <div className="cta-band">
-          <div className="stack gap-3" style={{ maxWidth: 560 }}>
-            <h2 className="title-1">Sua próxima viagem começa com um rascunho.</h2>
-            <p className="cta-sub">Crie a viagem em segundos e chame quem vai junto quando quiser.</p>
-          </div>
-          <Link to={usuario ? '/viagens' : '/cadastro'} className="btn btn-lg cta-btn">
-            {usuario ? 'Abrir minhas viagens' : 'Criar conta grátis'} <ArrowRight />
-          </Link>
-        </div>
+    <section className="section cta-plain">
+      <div className="container stack gap-4" style={{ alignItems: 'center', textAlign: 'center' }}>
+        <MapPin aria-hidden className="cta-plain-icon" />
+        <h2 className="title-1">Sua próxima viagem começa com um rascunho.</h2>
+        <p className="secondary section-lead">
+          Crie a viagem em segundos e chame quem vai junto quando quiser.
+        </p>
+        <Link to={usuario ? '/viagens' : '/cadastro'} className="btn btn-brand btn-lg">
+          {usuario ? 'Abrir minhas viagens' : 'Criar conta grátis'} <ArrowRight />
+        </Link>
       </div>
     </section>
   );
@@ -375,7 +330,6 @@ export default function Landing() {
       <Hero />
       <JeitosDeViajar />
       <ComoFunciona />
-      <Vitrine />
       <Ranking />
       <ChamadaFinal />
     </>

@@ -1,27 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowDown,
-  ArrowUp,
-  BedDouble,
-  CalendarDays,
-  Clock,
-  Globe,
-  MapPin,
-  Pencil,
-  Plus,
-  Route,
-  Star,
-  Trash,
-  Wallet,
-} from 'lucide-react';
+import { ArrowDown, ArrowUp, BedDouble, Pencil, Plus, Route, Star, Trash } from 'lucide-react';
 import { atividadesApi, orcamentoApi, roteiroApi } from '../../api/endpoints';
 import type { AtividadeViagem, DestinoViagem } from '../../api/types';
 import { ConfirmSheet } from '../../components/ConfirmSheet';
 import { ICONE_CATEGORIA } from '../../components/icons';
 import { ParadaSheet } from '../../components/ParadaSheet';
-import { Empty, Glass, Photo, Spinner } from '../../components/ui';
+import { Empty, Photo, Spinner } from '../../components/ui';
 import { useToast } from '../../state/toast';
 import { fotoDoDestino } from '../../utils/featured';
 import {
@@ -124,7 +110,7 @@ function LinhaAtividade({
   );
 }
 
-function CartaoParada({
+function Parada({
   parada,
   total,
   podeEditar,
@@ -163,9 +149,7 @@ function CartaoParada({
 
   const porDia = useMemo(() => {
     const grupos = new Map<string, AtividadeViagem[]>();
-    for (const a of atividades.data ?? []) {
-      grupos.set(a.data, [...(grupos.get(a.data) ?? []), a]);
-    }
+    for (const a of atividades.data ?? []) grupos.set(a.data, [...(grupos.get(a.data) ?? []), a]);
     return [...grupos.entries()];
   }, [atividades.data]);
 
@@ -176,7 +160,7 @@ function CartaoParada({
       <div className="stop-rail" aria-hidden>
         <span className="stop-num">{parada.ordem}</span>
       </div>
-      <Glass className="stop-card">
+      <div className="stop-plain">
         <header className="stop-head">
           <Photo src={fotoDoDestino(parada.destino.nome, parada.destino.foto_url)} alt="" className="stop-thumb" />
           <div className="stack gap-1 grow" style={{ minWidth: 0 }}>
@@ -185,11 +169,8 @@ function CartaoParada({
                 {parada.destino.nome}
               </Link>
             </h3>
-            <span className="subhead secondary row gap-1 wrap">
-              <MapPin size={14} aria-hidden /> {countryName(parada.destino.pais_codigo)}
-              <span aria-hidden>·</span>
-              <CalendarDays size={14} aria-hidden /> {formatRange(parada.data_chegada, parada.data_saida)}
-              <span aria-hidden>·</span>
+            <span className="subhead secondary">
+              {countryName(parada.destino.pais_codigo)} · {formatRange(parada.data_chegada, parada.data_saida)} ·{' '}
               {noites === 0 ? 'bate e volta' : plural(noites, 'noite')}
             </span>
             {parada.hospedagem && (
@@ -200,22 +181,10 @@ function CartaoParada({
           </div>
           {podeEditar && (
             <div className="row gap-1 stop-tools">
-              <button
-                type="button"
-                className="icon-btn icon-btn-sm"
-                onClick={() => onMover(-1)}
-                disabled={parada.ordem === 1}
-                aria-label="Mover para antes"
-              >
+              <button type="button" className="icon-btn icon-btn-sm" onClick={() => onMover(-1)} disabled={parada.ordem === 1} aria-label="Mover para antes">
                 <ArrowUp />
               </button>
-              <button
-                type="button"
-                className="icon-btn icon-btn-sm"
-                onClick={() => onMover(1)}
-                disabled={parada.ordem === total}
-                aria-label="Mover para depois"
-              >
+              <button type="button" className="icon-btn icon-btn-sm" onClick={() => onMover(1)} disabled={parada.ordem === total} aria-label="Mover para depois">
                 <ArrowDown />
               </button>
               <button type="button" className="icon-btn icon-btn-sm" onClick={onEditar} aria-label="Editar estadia">
@@ -253,16 +222,14 @@ function CartaoParada({
             </section>
           ))}
           {podeEditar && (
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setSheet({})}>
+            <button type="button" className="btn btn-plain btn-sm" onClick={() => setSheet({})}>
               <Plus /> Adicionar atividade
             </button>
           )}
         </div>
-      </Glass>
+      </div>
 
-      {sheet && (
-        <AtividadeSheet open onClose={() => setSheet(null)} parada={parada} atividade={sheet.atividade} />
-      )}
+      {sheet && <AtividadeSheet open onClose={() => setSheet(null)} parada={parada} atividade={sheet.atividade} />}
       <AvaliarSheet
         atividade={avaliar}
         onClose={() => setAvaliar(null)}
@@ -289,15 +256,8 @@ export function AbaRoteiro({ viagem, podeEditar }: ContextoViagem) {
   const [editar, setEditar] = useState<DestinoViagem | null>(null);
   const [remover, setRemover] = useState<DestinoViagem | null>(null);
 
-  const roteiro = useQuery({
-    queryKey: ['roteiro', viagem.id],
-    queryFn: () => roteiroApi.listar(viagem.id),
-  });
-  const orcamento = useQuery({
-    queryKey: ['orcamento', viagem.id],
-    queryFn: () => orcamentoApi.consultar(viagem.id),
-  });
-
+  const roteiro = useQuery({ queryKey: ['roteiro', viagem.id], queryFn: () => roteiroApi.listar(viagem.id) });
+  const orcamento = useQuery({ queryKey: ['orcamento', viagem.id], queryFn: () => orcamentoApi.consultar(viagem.id) });
   const paradas = roteiro.data ?? [];
 
   const reordenar = useMutation({
@@ -330,110 +290,63 @@ export function AbaRoteiro({ viagem, podeEditar }: ContextoViagem) {
     reordenar.mutate(ids);
   };
 
-  const paises = new Set(paradas.map((p) => p.destino.pais_codigo));
+  const paises = [...new Set(paradas.map((p) => p.destino.pais_codigo))].map(countryName);
   const ultimaSaida = paradas.length ? paradas[paradas.length - 1].data_saida : undefined;
   const orc = orcamento.data;
-  const pct = orc?.percentual_consumido !== null && orc?.percentual_consumido !== undefined
-    ? Math.min(100, toNumber(orc.percentual_consumido))
-    : null;
 
   return (
-    <div className="trip-layout">
-      <div className="stack gap-4">
-        {roteiro.isLoading && <div className="skeleton" style={{ height: 260 }} />}
-        {roteiro.isSuccess && paradas.length === 0 && (
-          <Glass className="card-pad">
-            <Empty
-              icon={<Route />}
-              title="Roteiro em branco"
-              action={
-                podeEditar && (
-                  <button type="button" className="btn btn-primary" onClick={() => setNova(true)}>
-                    <Plus /> Adicionar primeira parada
-                  </button>
-                )
-              }
-            >
-              {podeEditar
-                ? 'Adicione as cidades por onde vocês vão passar, na ordem da viagem.'
-                : 'Quem organiza ainda não adicionou paradas.'}
-            </Empty>
-          </Glass>
+    <div className="trip-single">
+      {/* O resumo vira uma linha de fatos, em vez de um cartão lateral. */}
+      <p className="facts subhead secondary">
+        <span>{plural(tripDays(viagem.data_inicio, viagem.data_fim), 'dia')}</span>
+        <span>{plural(paradas.length, 'parada')}</span>
+        {paises.length > 0 && <span>{paises.join(', ')}</span>}
+        {orc && (
+          <span>
+            <strong className={orc.orcamento_excedido ? 'text-danger' : ''}>{formatMoney(orc.total_planejado)}</strong>
+            {orc.orcamento_total !== null ? ` de ${formatMoney(orc.orcamento_total)}` : ' planejados'}
+          </span>
         )}
-        {paradas.length > 0 && (
-          <ol className="stops" aria-label="Paradas na ordem de visita">
-            {paradas.map((p) => (
-              <CartaoParada
-                key={p.id}
-                parada={p}
-                total={paradas.length}
-                podeEditar={podeEditar}
-                onMover={(d) => mover(p, d)}
-                onEditar={() => setEditar(p)}
-                onRemover={() => setRemover(p)}
-              />
-            ))}
-          </ol>
-        )}
-        {podeEditar && paradas.length > 0 && (
-          <button type="button" className="btn btn-glass add-stop" onClick={() => setNova(true)}>
-            <Plus /> Adicionar parada
-          </button>
-        )}
-      </div>
+      </p>
 
-      <aside className="trip-aside">
-        <Glass className="card-pad stack gap-4">
-          <h2 className="headline">Resumo</h2>
-          <dl className="summary">
-            <div>
-              <dt><CalendarDays aria-hidden /> Duração</dt>
-              <dd className="tabular">{plural(tripDays(viagem.data_inicio, viagem.data_fim), 'dia')}</dd>
-            </div>
-            <div>
-              <dt><Route aria-hidden /> Paradas</dt>
-              <dd className="tabular">{paradas.length}</dd>
-            </div>
-            <div>
-              <dt><Globe aria-hidden /> Países</dt>
-              <dd>{[...paises].map(countryName).join(', ') || '—'}</dd>
-            </div>
-            <div>
-              <dt><Clock aria-hidden /> Período</dt>
-              <dd>{formatRange(viagem.data_inicio, viagem.data_fim)}</dd>
-            </div>
-          </dl>
-          {orc && (
-            <div className="stack gap-2">
-              <div className="row between">
-                <span className="subhead row gap-2">
-                  <Wallet size={16} aria-hidden className="secondary" /> Planejado
-                </span>
-                <strong className="tabular">{formatMoney(orc.total_planejado)}</strong>
-              </div>
-              {pct !== null && (
-                <>
-                  <div
-                    className={`progress ${orc.orcamento_excedido ? 'is-over' : ''}`}
-                    role="meter"
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-valuenow={pct}
-                    aria-label="Orçamento consumido"
-                  >
-                    <span style={{ width: `${pct}%` }} />
-                  </div>
-                  <span className="footnote secondary">
-                    {orc.orcamento_excedido ? 'Acima do orçamento de ' : 'de '}
-                    {formatMoney(orc.orcamento_total)}
-                  </span>
-                </>
-              )}
-              {pct === null && <span className="footnote tertiary">Orçamento ainda não definido.</span>}
-            </div>
-          )}
-        </Glass>
-      </aside>
+      {roteiro.isLoading && <div className="skeleton" style={{ height: 260 }} />}
+      {roteiro.isSuccess && paradas.length === 0 && (
+        <Empty
+          icon={<Route />}
+          title="Roteiro em branco"
+          action={
+            podeEditar && (
+              <button type="button" className="btn btn-primary" onClick={() => setNova(true)}>
+                <Plus /> Adicionar primeira parada
+              </button>
+            )
+          }
+        >
+          {podeEditar
+            ? 'Adicione as cidades por onde vocês vão passar, na ordem da viagem.'
+            : 'Quem organiza ainda não adicionou paradas.'}
+        </Empty>
+      )}
+      {paradas.length > 0 && (
+        <ol className="stops stops-plain" aria-label="Paradas na ordem de visita">
+          {paradas.map((p) => (
+            <Parada
+              key={p.id}
+              parada={p}
+              total={paradas.length}
+              podeEditar={podeEditar}
+              onMover={(d) => mover(p, d)}
+              onEditar={() => setEditar(p)}
+              onRemover={() => setRemover(p)}
+            />
+          ))}
+        </ol>
+      )}
+      {podeEditar && paradas.length > 0 && (
+        <button type="button" className="btn btn-secondary add-stop" onClick={() => setNova(true)}>
+          <Plus /> Adicionar parada
+        </button>
+      )}
 
       <ParadaSheet
         open={nova}

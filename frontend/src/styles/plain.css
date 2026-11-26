@@ -1,0 +1,470 @@
+/*
+ * Opção 2 — menos cartões.
+ * O vidro fica reservado para o que flutua (barra, abas, sheets e legendas sobre
+ * fotos). O conteúdo fica solto, separado por espaço e linhas finas, como nas
+ * listas agrupadas do iOS.
+ */
+
+/* Vidro “desligado”: mesma marcação, sem caixa. */
+.act-card.glass,
+.dest-map.glass,
+.profile-globe.glass {
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+.act-card.glass::before,
+.act-card.glass::after,
+.dest-map.glass::before,
+.dest-map.glass::after,
+.profile-globe.glass::before,
+.profile-globe.glass::after {
+  display: none;
+}
+
+/* ───────────── Início ───────────── */
+.hero-popular a {
+  font-weight: 600;
+}
+
+.section-head-center {
+  align-items: center;
+  text-align: center;
+}
+
+.section-head-center .segmented {
+  margin-top: var(--space-3);
+}
+
+.feature {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: var(--space-7);
+  animation: fade-in var(--dur-slow) var(--ease-out);
+}
+
+.feature-photo {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-xl);
+}
+
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checklist li::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E")
+      center / 13px no-repeat,
+    var(--brand-gradient);
+}
+
+.steps-plain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+
+.steps-plain li {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--separator);
+}
+
+.steps-plain-icon {
+  width: 26px;
+  height: 26px;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-6);
+}
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--separator);
+  border-radius: 0;
+  color: var(--text);
+  text-decoration: none !important;
+  transition: background-color var(--dur-fast);
+}
+
+.rank-row:hover {
+  background: var(--fill);
+}
+
+.rank-pos {
+  width: 28px;
+  font-size: var(--text-title-2);
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.rank-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  flex: none;
+}
+
+.cta-plain-icon {
+  width: 36px;
+  height: 36px;
+  color: var(--accent);
+}
+
+@media (max-width: 860px) {
+  .feature {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+
+  .steps-plain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rank-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .steps-plain {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ───────────── Minhas viagens ───────────── */
+.stats-inline,
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 0;
+}
+
+.stats-inline > *,
+.facts > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stats-inline > * + *::before,
+.facts > * + *::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  margin: 0 12px;
+  border-radius: 50%;
+  background: var(--text-tertiary);
+}
+
+.stats-inline strong,
+.facts strong {
+  color: var(--text);
+}
+
+.trip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.trip-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--separator);
+  border-radius: 0;
+  color: var(--text);
+  text-decoration: none !important;
+  transition: background-color var(--dur-fast);
+}
+
+.trip-row:hover {
+  background: var(--fill);
+}
+
+.trip-row-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  flex: none;
+}
+
+.trip-row-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+}
+
+.trip-row-chevron {
+  width: 18px;
+  height: 18px;
+  color: var(--text-tertiary);
+  flex: none;
+}
+
+@media (max-width: 640px) {
+  .trip-row {
+    flex-wrap: wrap;
+  }
+
+  .trip-row > .stack {
+    flex-basis: calc(100% - 120px);
+  }
+
+  .trip-row-meta {
+    width: 100%;
+    padding-left: 80px;
+  }
+
+  .trip-row-chevron {
+    display: none;
+  }
+}
+
+/* ───────────── Página da viagem ───────────── */
+.trip-single {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.facts {
+  margin-bottom: var(--space-5);
+  justify-content: center;
+}
+
+.facts.facts-left {
+  justify-content: flex-start;
+  margin-bottom: 0;
+}
+
+.stops-plain {
+  gap: 0;
+}
+
+.stop-plain {
+  padding: 14px 0 var(--space-6);
+  border-bottom: 1px solid var(--separator);
+}
+
+.stops-plain .stop:last-child .stop-plain {
+  border-bottom: 0;
+}
+
+.stops-plain .stop-rail::before {
+  bottom: 0;
+}
+
+.stop-plain .stop-agenda {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.map-plain {
+  min-height: 560px;
+}
+
+.route-line {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px 0;
+}
+
+.route-line li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-line li + li::before {
+  content: '→';
+  margin: 0 14px;
+  color: var(--text-tertiary);
+}
+
+.budget-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.budget-inline .money-input {
+  width: 220px;
+}
+
+.budget-inline-error {
+  width: 100%;
+}
+
+.inline-edit {
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-subhead);
+  font-weight: 550;
+}
+
+.status-line svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.text-warning {
+  color: var(--warning);
+}
+
+.text-positive {
+  color: var(--positive);
+}
+
+.section-rule {
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--separator);
+}
+
+.invite-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: 4px;
+  border-radius: var(--r-md);
+}
+
+.invite-inline-note {
+  width: 100%;
+  padding-left: 4px;
+}
+
+.plain-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.plain-list .list-row {
+  padding: 12px 4px;
+  border-top: 1px solid var(--separator);
+}
+
+.plain-list-head {
+  padding: var(--space-4) 4px 6px;
+}
+
+/* ───────────── Explorar e destino ───────────── */
+.act-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--space-6);
+  row-gap: 0;
+}
+
+.act-card.glass {
+  border-radius: 0;
+  border-bottom: 1px solid var(--separator);
+  padding: 12px 8px;
+}
+
+.act-card.glass:hover {
+  background: var(--fill);
+}
+
+.act-card .act-thumb {
+  width: 64px;
+  height: 64px;
+}
+
+@media (max-width: 760px) {
+  .act-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ───────────── Perfil: um único grupo de ajustes ───────────── */
+.profile-globe.glass {
+  padding: 0;
+}
+
+.profile-grid {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border-radius: var(--r-xl);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(185%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(185%);
+  box-shadow: inset 0 0 0 1px var(--glass-rim), var(--glass-shadow);
+  overflow: hidden;
+}
+
+.profile-grid > .glass {
+  background: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.profile-grid > .glass::before,
+.profile-grid > .glass::after {
+  display: none;
+}
+
+.profile-grid > .glass + .glass {
+  border-top: 1px solid var(--separator);
+}

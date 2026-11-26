@@ -1,21 +1,21 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { ArrowRight, CalendarDays, Globe, Luggage, Plane, Plus, Route, Users } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronRight, Luggage, Plus, Route, Users } from 'lucide-react';
 import { roteiroApi, usuarioApi, viagemApi } from '../api/endpoints';
 import type { ItemListaViagem } from '../api/types';
 import { ICONE_TIPO_VIAGEM } from '../components/icons';
 import { Empty, Glass, Photo, Segmented } from '../components/ui';
 import { ViagemSheet } from '../components/ViagemSheet';
 import { useAuth } from '../state/auth';
-import { fotoGrandeDoDestino } from '../utils/featured';
+import { fotoDoDestino, fotoGrandeDoDestino } from '../utils/featured';
 import { daysUntil, formatRange, plural, toISODate, today, tripDays } from '../utils/format';
 import { useDocumentTitle } from '../utils/hooks';
 import { lerTiposViagem, PERFIL, STATUS_VIAGEM, TIPO_VIAGEM } from '../utils/labels';
 
 type Filtro = 'todas' | 'minhas' | 'compartilhadas';
 
-function useRoteiroResumo(viagemId: number) {
+function useRoteiro(viagemId: number) {
   return useQuery({
     queryKey: ['roteiro', viagemId],
     queryFn: () => roteiroApi.listar(viagemId),
@@ -31,54 +31,72 @@ function Contagem({ inicio }: { inicio: string }) {
   return <>Em andamento</>;
 }
 
-function CartaoViagem({ viagem, destaque = false }: { viagem: ItemListaViagem; destaque?: boolean }) {
-  const roteiro = useRoteiroResumo(viagem.id);
+/** Só a próxima viagem ganha destaque com foto grande. */
+function Destaque({ viagem }: { viagem: ItemListaViagem }) {
+  const roteiro = useRoteiro(viagem.id);
   const paradas = roteiro.data ?? [];
   const capa = paradas[0] ? fotoGrandeDoDestino(paradas[0].destino.nome, paradas[0].destino.foto_url) : null;
-  const tipo = lerTiposViagem()[String(viagem.id)];
-  const IconeTipo = tipo ? ICONE_TIPO_VIAGEM[tipo] : null;
-  const status = STATUS_VIAGEM[viagem.status];
 
   return (
-    <Link to={`/viagens/${viagem.id}`} className={`trip-card ${destaque ? 'is-featured' : ''}`}>
+    <Link to={`/viagens/${viagem.id}`} className="trip-card is-featured">
       <Photo src={capa} alt="" className="trip-card-photo" />
-      <div className="trip-card-top row gap-2 wrap">
-        <span className={`chip chip-glass`}>
-          <span className="dot" style={{ color: viagem.status === 'confirmada' ? '#1fbf6a' : viagem.status === 'planejando' ? '#0a84ff' : '#8aa0b4' }} />
-          {status.label}
-        </span>
-        {viagem.papel_usuario !== 'criador' && (
-          <span className="chip chip-glass">
-            <Users aria-hidden /> {PERFIL[viagem.papel_usuario].label}
-          </span>
-        )}
-        {IconeTipo && tipo && viagem.papel_usuario === 'criador' && (
-          <span className="chip chip-glass">
-            <IconeTipo aria-hidden /> {TIPO_VIAGEM[tipo].label}
-          </span>
-        )}
-      </div>
       <Glass className="trip-card-info">
-        {destaque && (
-          <span className="caption trip-countdown">
-            <Contagem inicio={viagem.data_inicio} />
-          </span>
-        )}
-        <h3 className={destaque ? 'title-2' : 'headline'}>{viagem.nome}</h3>
+        <span className="caption trip-countdown">
+          <Contagem inicio={viagem.data_inicio} />
+        </span>
+        <h3 className="title-2">{viagem.nome}</h3>
         <span className="footnote secondary row gap-1">
           <CalendarDays size={14} aria-hidden /> {formatRange(viagem.data_inicio, viagem.data_fim)} ·{' '}
-          {plural(tripDays(viagem.data_inicio, viagem.data_fim), 'dia')}
+          {plural(tripDays(viagem.data_inicio, viagem.data_fim), 'dia')} · {STATUS_VIAGEM[viagem.status].label}
         </span>
         <span className="footnote secondary row gap-1 truncate">
           <Route size={14} aria-hidden />
-          {roteiro.isLoading
-            ? '…'
-            : paradas.length
-              ? paradas.map((p) => p.destino.nome).join(' → ')
-              : 'Roteiro ainda vazio'}
+          {paradas.length ? paradas.map((p) => p.destino.nome).join(' → ') : 'Roteiro ainda vazio'}
         </span>
       </Glass>
     </Link>
+  );
+}
+
+/** As demais viagens em linhas de uma lista, sem cartões. */
+function LinhaViagem({ viagem }: { viagem: ItemListaViagem }) {
+  const roteiro = useRoteiro(viagem.id);
+  const paradas = roteiro.data ?? [];
+  const primeira = paradas[0];
+  const tipo = viagem.papel_usuario === 'criador' ? lerTiposViagem()[String(viagem.id)] : undefined;
+  const IconeTipo = tipo ? ICONE_TIPO_VIAGEM[tipo] : null;
+
+  return (
+    <li>
+      <Link to={`/viagens/${viagem.id}`} className="trip-row">
+        <Photo
+          src={primeira ? fotoDoDestino(primeira.destino.nome, primeira.destino.foto_url) : null}
+          alt=""
+          className="trip-row-thumb"
+        />
+        <span className="stack grow" style={{ minWidth: 0 }}>
+          <strong className="headline truncate">{viagem.nome}</strong>
+          <span className="footnote secondary truncate">
+            {formatRange(viagem.data_inicio, viagem.data_fim)}
+            {paradas.length > 0 && ` · ${paradas.map((p) => p.destino.nome).join(' → ')}`}
+          </span>
+        </span>
+        <span className="trip-row-meta footnote secondary">
+          {viagem.papel_usuario !== 'criador' && (
+            <span className="row gap-1">
+              <Users size={13} aria-hidden /> {PERFIL[viagem.papel_usuario].label}
+            </span>
+          )}
+          {IconeTipo && tipo && (
+            <span className="row gap-1">
+              <IconeTipo size={13} aria-hidden /> {TIPO_VIAGEM[tipo].label}
+            </span>
+          )}
+          <span className={`chip ${STATUS_VIAGEM[viagem.status].chip}`}>{STATUS_VIAGEM[viagem.status].label}</span>
+        </span>
+        <ChevronRight aria-hidden className="trip-row-chevron" />
+      </Link>
+    </li>
   );
 }
 
@@ -105,13 +123,11 @@ export default function Viagens() {
     const filtradas = todas.filter((v) =>
       filtro === 'todas' ? true : filtro === 'minhas' ? v.papel_usuario === 'criador' : v.papel_usuario !== 'criador',
     );
-    const futuras = filtradas
-      .filter((v) => v.data_fim >= hoje && v.status !== 'concluida')
-      .sort((a, b) => a.data_inicio.localeCompare(b.data_inicio));
-    const passadas = filtradas
-      .filter((v) => !(v.data_fim >= hoje && v.status !== 'concluida'))
-      .sort((a, b) => b.data_inicio.localeCompare(a.data_inicio));
-    return { proximas: futuras, anteriores: passadas };
+    const ativa = (v: ItemListaViagem) => v.data_fim >= hoje && v.status !== 'concluida';
+    return {
+      proximas: filtradas.filter(ativa).sort((a, b) => a.data_inicio.localeCompare(b.data_inicio)),
+      anteriores: filtradas.filter((v) => !ativa(v)).sort((a, b) => b.data_inicio.localeCompare(a.data_inicio)),
+    };
   }, [todas, filtro]);
 
   const compartilhadas = todas.filter((v) => v.papel_usuario !== 'criador').length;
@@ -124,11 +140,19 @@ export default function Viagens() {
         <div className="stack gap-2">
           <span className="eyebrow">Minhas viagens</span>
           <h1 className="title-1">Olá, {primeiroNome}.</h1>
-          <p className="secondary">
-            {todas.length
-              ? 'Veja o que vem por aí e continue de onde parou.'
-              : 'Que tal começar a planejar a próxima?'}
-          </p>
+          {todas.length > 0 ? (
+            <p className="stats-inline subhead secondary">
+              <span><strong className="tabular">{todas.length}</strong> viagens</span>
+              <span><strong className="tabular">{proximas.length}</strong> por vir</span>
+              <span><strong className="tabular">{compartilhadas}</strong> compartilhadas comigo</span>
+              <Link to="/perfil">
+                <strong className="tabular">{paises.data?.total ?? '–'}</strong>{' '}
+                {paises.data?.total === 1 ? 'país visitado' : 'países visitados'}
+              </Link>
+            </p>
+          ) : (
+            <p className="secondary">Que tal começar a planejar a próxima?</p>
+          )}
         </div>
         <button type="button" className="btn btn-brand btn-lg" onClick={() => setCriando(true)}>
           <Plus /> Nova viagem
@@ -136,36 +160,7 @@ export default function Viagens() {
       </header>
 
       {todas.length > 0 && (
-        <div className="stats-row">
-          <Glass className="stat">
-            <Luggage aria-hidden />
-            <span className="stat-value tabular">{todas.length}</span>
-            <span className="footnote secondary">viagens</span>
-          </Glass>
-          <Glass className="stat">
-            <Plane aria-hidden />
-            <span className="stat-value tabular">{proximas.length}</span>
-            <span className="footnote secondary">por vir</span>
-          </Glass>
-          <Glass className="stat">
-            <Users aria-hidden />
-            <span className="stat-value tabular">{compartilhadas}</span>
-            <span className="footnote secondary">compartilhadas comigo</span>
-          </Glass>
-          <Link to="/perfil" className="stat-link">
-            <Glass className="stat" interactive>
-              <Globe aria-hidden />
-              <span className="stat-value tabular">{paises.data?.total ?? '–'}</span>
-              <span className="footnote secondary">
-                {paises.data?.total === 1 ? 'país visitado' : 'países visitados'}
-              </span>
-            </Glass>
-          </Link>
-        </div>
-      )}
-
-      {todas.length > 0 && (
-        <div className="row between wrap gap-3" style={{ margin: '32px 0 20px' }}>
+        <div style={{ marginBottom: 28 }}>
           <Segmented<Filtro>
             label="Filtrar viagens"
             value={filtro}
@@ -179,62 +174,54 @@ export default function Viagens() {
         </div>
       )}
 
-      {lista.isLoading && (
-        <div className="trips-grid">
-          {Array.from({ length: 3 }, (_, i) => (
-            <div key={i} className="skeleton" style={{ height: 320 }} />
-          ))}
-        </div>
-      )}
+      {lista.isLoading && <div className="skeleton" style={{ height: 360 }} />}
 
       {lista.isSuccess && todas.length === 0 && (
-        <Glass className="card-pad">
-          <Empty
-            icon={<Luggage />}
-            title="Sua primeira viagem começa aqui"
-            action={
-              <div className="row wrap gap-3" style={{ justifyContent: 'center' }}>
-                <button type="button" className="btn btn-primary" onClick={() => setCriando(true)}>
-                  <Plus /> Criar viagem
-                </button>
-                <Link to="/explorar" className="btn btn-gray">
-                  Explorar destinos
-                </Link>
-              </div>
-            }
-          >
-            Crie uma viagem, monte o roteiro e convide quem vai junto. Se alguém já te convidou,
-            abra o link do email para entrar na viagem.
-          </Empty>
-        </Glass>
+        <Empty
+          icon={<Luggage />}
+          title="Sua primeira viagem começa aqui"
+          action={
+            <div className="row wrap gap-3" style={{ justifyContent: 'center' }}>
+              <button type="button" className="btn btn-primary" onClick={() => setCriando(true)}>
+                <Plus /> Criar viagem
+              </button>
+              <Link to="/explorar" className="btn btn-gray">
+                Explorar destinos
+              </Link>
+            </div>
+          }
+        >
+          Crie uma viagem, monte o roteiro e convide quem vai junto. Se alguém já te convidou, abra
+          o link do email para entrar na viagem.
+        </Empty>
       )}
 
       {destaque && (
-        <section className="stack gap-4" style={{ marginBottom: 48 }}>
+        <section className="stack gap-3" style={{ marginBottom: 48 }}>
           <h2 className="title-3">Próxima viagem</h2>
-          <CartaoViagem viagem={destaque} destaque />
+          <Destaque viagem={destaque} />
         </section>
       )}
 
       {demaisProximas.length > 0 && (
-        <section className="stack gap-4" style={{ marginBottom: 48 }}>
+        <section className="stack gap-2" style={{ marginBottom: 40 }}>
           <h2 className="title-3">Também por vir</h2>
-          <div className="trips-grid">
+          <ul className="trip-list">
             {demaisProximas.map((v) => (
-              <CartaoViagem key={v.id} viagem={v} />
+              <LinhaViagem key={v.id} viagem={v} />
             ))}
-          </div>
+          </ul>
         </section>
       )}
 
       {anteriores.length > 0 && (
-        <section className="stack gap-4">
+        <section className="stack gap-2">
           <h2 className="title-3">Anteriores</h2>
-          <div className="trips-grid">
+          <ul className="trip-list">
             {anteriores.map((v) => (
-              <CartaoViagem key={v.id} viagem={v} />
+              <LinhaViagem key={v.id} viagem={v} />
             ))}
-          </div>
+          </ul>
         </section>
       )}
 
@@ -249,8 +236,8 @@ export default function Viagens() {
       {lista.hasNextPage && (
         <button
           type="button"
-          className="btn btn-secondary"
-          style={{ display: 'flex', margin: '32px auto 0' }}
+          className="btn btn-plain"
+          style={{ display: 'flex', margin: '24px auto 0' }}
           onClick={() => lista.fetchNextPage()}
         >
           Carregar mais <ArrowRight />

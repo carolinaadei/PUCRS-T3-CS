@@ -11,6 +11,7 @@ import './styles/layout.css';
 import './styles/globe.css';
 import './styles/pages.css';
 import './styles/trips.css';
+import './styles/plain.css';
 import { ApiError } from './api/client';
 import { AuthProvider } from './state/auth';
 import { ToastProvider } from './state/toast';

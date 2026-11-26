@@ -1,17 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Crown, Eye, Mail, Pencil, Send, Trash, UserPlus, X } from 'lucide-react';
+import { Crown, Eye, Mail, Pencil, Send, Trash, X } from 'lucide-react';
 import { ApiError, mensagemDeErro } from '../../api/client';
 import { membrosApi } from '../../api/endpoints';
 import type { Membro, PapelMembro } from '../../api/types';
 import { ConfirmSheet } from '../../components/ConfirmSheet';
-import { Avatar, Glass, LoadingButton, Spinner } from '../../components/ui';
+import { Avatar, LoadingButton, Spinner } from '../../components/ui';
 import { useAuth } from '../../state/auth';
 import { useToast } from '../../state/toast';
 import { formatDate, relativeTime } from '../../utils/format';
 import { PERFIL } from '../../utils/labels';
 import type { ContextoViagem } from './contexto';
 
+/** Tudo numa única lista: convidar, quem vai e convites pendentes. */
 export function AbaPessoas({ viagem, ehCriador, destacarConvite }: ContextoViagem & { destacarConvite?: boolean }) {
   const { usuario } = useAuth();
   const queryClient = useQueryClient();
@@ -20,10 +21,7 @@ export function AbaPessoas({ viagem, ehCriador, destacarConvite }: ContextoViage
   const [erro, setErro] = useState<string | null>(null);
   const [remover, setRemover] = useState<Membro | null>(null);
 
-  const membros = useQuery({
-    queryKey: ['membros', viagem.id],
-    queryFn: () => membrosApi.listar(viagem.id),
-  });
+  const membros = useQuery({ queryKey: ['membros', viagem.id], queryFn: () => membrosApi.listar(viagem.id) });
   const convites = useQuery({
     queryKey: ['convites', viagem.id],
     queryFn: () => membrosApi.convites(viagem.id),
@@ -53,8 +51,7 @@ export function AbaPessoas({ viagem, ehCriador, destacarConvite }: ContextoViage
   });
 
   const alterarPapel = useMutation({
-    mutationFn: ({ id, papel }: { id: number; papel: PapelMembro }) =>
-      membrosApi.alterarPapel(viagem.id, id, papel),
+    mutationFn: ({ id, papel }: { id: number; papel: PapelMembro }) => membrosApi.alterarPapel(viagem.id, id, papel),
     onSuccess: (m) => {
       queryClient.invalidateQueries({ queryKey: ['membros', viagem.id] });
       toast.sucesso(`${m.nome} agora é ${PERFIL[m.papel].label.toLowerCase()}.`);
@@ -80,82 +77,105 @@ export function AbaPessoas({ viagem, ehCriador, destacarConvite }: ContextoViage
     convidar.mutate(e);
   };
 
-  return (
-    <div className="trip-layout">
-      <div className="stack gap-4">
-        <Glass className="list-group">
-          <div className="list-row">
-            <h2 className="headline grow">Quem vai</h2>
-            <span className="footnote secondary">{membros.data?.length ?? '–'} pessoas</span>
-          </div>
-          {membros.isLoading && (
-            <div className="list-row">
-              <Spinner />
-            </div>
-          )}
-          {membros.data?.map((m) => {
-            const souEu = m.usuario_id === usuario?.id;
-            return (
-              <div key={m.usuario_id} className="list-row">
-                <Avatar name={m.nome} seed={m.usuario_id} size={40} />
-                <div className="stack grow" style={{ minWidth: 0 }}>
-                  <span className="subhead truncate">
-                    <strong>{m.nome}</strong>
-                    {souEu && <span className="secondary"> (você)</span>}
-                  </span>
-                  <span className="footnote secondary truncate">
-                    {m.email}
-                    {m.entrou_em && m.papel !== 'criador' ? ` · entrou ${relativeTime(m.entrou_em)}` : ''}
-                  </span>
-                </div>
-                {m.papel === 'criador' ? (
-                  <span className="chip chip-green">
-                    <Crown aria-hidden /> {PERFIL.criador.label}
-                  </span>
-                ) : ehCriador ? (
-                  <>
-                    <label className="sr-only" htmlFor={`papel-${m.usuario_id}`}>
-                      Papel de {m.nome}
-                    </label>
-                    <select
-                      id={`papel-${m.usuario_id}`}
-                      className="select select-compact"
-                      value={m.papel}
-                      disabled={alterarPapel.isPending}
-                      onChange={(e) =>
-                        alterarPapel.mutate({ id: m.usuario_id, papel: e.target.value as PapelMembro })
-                      }
-                    >
-                      <option value="editor">Editor</option>
-                      <option value="visualizador">Visualizador</option>
-                    </select>
-                    <button
-                      type="button"
-                      className="icon-btn icon-btn-sm"
-                      aria-label={`Remover ${m.nome}`}
-                      onClick={() => setRemover(m)}
-                    >
-                      <Trash />
-                    </button>
-                  </>
-                ) : (
-                  <span className={`chip ${m.papel === 'editor' ? 'chip-blue' : ''}`}>
-                    {m.papel === 'editor' ? <Pencil aria-hidden /> : <Eye aria-hidden />}
-                    {PERFIL[m.papel].label}
-                  </span>
-                )}
-              </div>
-            );
-          })}
-        </Glass>
+  const pendentes = convites.data ?? [];
 
-        {ehCriador && (convites.data?.length ?? 0) > 0 && (
-          <Glass className="list-group">
-            <div className="list-row">
-              <h2 className="headline grow">Convites pendentes</h2>
-            </div>
-            {convites.data!.map((c) => (
-              <div key={c.id} className="list-row">
+  return (
+    <div className="trip-single stack gap-5">
+      {ehCriador && (
+        <form className={`invite-inline ${destacarConvite ? 'is-highlight' : ''}`} onSubmit={enviar} noValidate>
+          <label className="sr-only" htmlFor="convite-email">
+            Email do convidado
+          </label>
+          <div className="input-icon grow">
+            <Mail aria-hidden />
+            <input
+              id="convite-email"
+              className="input"
+              type="email"
+              placeholder="Convidar por email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoFocus={destacarConvite}
+              aria-invalid={erro ? true : undefined}
+            />
+          </div>
+          <LoadingButton type="submit" className="btn btn-primary" loading={convidar.isPending} disabled={!email}>
+            <Send /> Enviar convite
+          </LoadingButton>
+          {erro ? (
+            <span className="field-error invite-inline-note">{erro}</span>
+          ) : (
+            <span className="footnote tertiary invite-inline-note">
+              O link vale por 7 dias. A pessoa entra como visualizadora e pode ser promovida a editora.
+            </span>
+          )}
+        </form>
+      )}
+
+      <ul className="plain-list" aria-label="Quem vai">
+        <li className="plain-list-head">
+          <span className="footnote secondary">Quem vai · {membros.data?.length ?? '–'}</span>
+        </li>
+        {membros.isLoading && (
+          <li className="list-row">
+            <Spinner />
+          </li>
+        )}
+        {membros.data?.map((m) => {
+          const souEu = m.usuario_id === usuario?.id;
+          return (
+            <li key={m.usuario_id} className="list-row">
+              <Avatar name={m.nome} seed={m.usuario_id} size={40} />
+              <div className="stack grow" style={{ minWidth: 0 }}>
+                <span className="subhead truncate">
+                  <strong>{m.nome}</strong>
+                  {souEu && <span className="secondary"> (você)</span>}
+                </span>
+                <span className="footnote secondary truncate">
+                  {m.email}
+                  {m.entrou_em && m.papel !== 'criador' ? ` · entrou ${relativeTime(m.entrou_em)}` : ''}
+                </span>
+              </div>
+              {m.papel === 'criador' ? (
+                <span className="chip chip-green">
+                  <Crown aria-hidden /> {PERFIL.criador.label}
+                </span>
+              ) : ehCriador ? (
+                <>
+                  <label className="sr-only" htmlFor={`papel-${m.usuario_id}`}>
+                    Papel de {m.nome}
+                  </label>
+                  <select
+                    id={`papel-${m.usuario_id}`}
+                    className="select select-compact"
+                    value={m.papel}
+                    disabled={alterarPapel.isPending}
+                    onChange={(e) => alterarPapel.mutate({ id: m.usuario_id, papel: e.target.value as PapelMembro })}
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="visualizador">Visualizador</option>
+                  </select>
+                  <button type="button" className="icon-btn icon-btn-sm" aria-label={`Remover ${m.nome}`} onClick={() => setRemover(m)}>
+                    <Trash />
+                  </button>
+                </>
+              ) : (
+                <span className={`chip ${m.papel === 'editor' ? 'chip-blue' : ''}`}>
+                  {m.papel === 'editor' ? <Pencil aria-hidden /> : <Eye aria-hidden />}
+                  {PERFIL[m.papel].label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+
+        {ehCriador && pendentes.length > 0 && (
+          <>
+            <li className="plain-list-head">
+              <span className="footnote secondary">Convites pendentes · {pendentes.length}</span>
+            </li>
+            {pendentes.map((c) => (
+              <li key={c.id} className="list-row">
                 <span className="invite-icon">
                   <Mail aria-hidden />
                 </span>
@@ -163,62 +183,20 @@ export function AbaPessoas({ viagem, ehCriador, destacarConvite }: ContextoViage
                   <span className="subhead truncate">{c.email}</span>
                   <span className="footnote secondary">Válido até {formatDate(c.expira_em.slice(0, 10), true)}</span>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-gray btn-sm"
-                  onClick={() => cancelar.mutate(c.id)}
-                  disabled={cancelar.isPending}
-                >
+                <button type="button" className="btn btn-plain btn-sm" onClick={() => cancelar.mutate(c.id)} disabled={cancelar.isPending}>
                   <X /> Cancelar
                 </button>
-              </div>
+              </li>
             ))}
-          </Glass>
+          </>
         )}
-      </div>
+      </ul>
 
-      <aside className="trip-aside">
-        {ehCriador ? (
-          <Glass className={`card-pad stack gap-3 ${destacarConvite ? 'is-highlight' : ''}`}>
-            <span className="budget-icon">
-              <UserPlus aria-hidden />
-            </span>
-            <h2 className="headline">Convidar alguém</h2>
-            <p className="subhead secondary">
-              Enviamos um link por email, válido por 7 dias. A pessoa entra como visualizadora e você
-              pode promovê-la a editora depois.
-            </p>
-            <form className="stack gap-3" onSubmit={enviar} noValidate>
-              <label className="sr-only" htmlFor="convite-email">
-                Email do convidado
-              </label>
-              <input
-                id="convite-email"
-                className="input"
-                type="email"
-                placeholder="email@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoFocus={destacarConvite}
-                aria-invalid={erro ? true : undefined}
-              />
-              {erro && <span className="field-error">{erro}</span>}
-              <LoadingButton type="submit" className="btn btn-primary" loading={convidar.isPending} disabled={!email}>
-                <Send /> Enviar convite
-              </LoadingButton>
-            </form>
-          </Glass>
-        ) : null}
-        <Glass className="card-pad stack gap-3">
-          <h2 className="headline">Papéis</h2>
-          {(['criador', 'editor', 'visualizador'] as const).map((p) => (
-            <div key={p} className="stack">
-              <strong className="subhead">{PERFIL[p].label}</strong>
-              <span className="footnote secondary">{PERFIL[p].descricao}</span>
-            </div>
-          ))}
-        </Glass>
-      </aside>
+      <p className="footnote tertiary">
+        <strong>{PERFIL.criador.label}</strong>: {PERFIL.criador.descricao.toLowerCase()}{' '}
+        <strong>{PERFIL.editor.label}</strong>: {PERFIL.editor.descricao.toLowerCase()}{' '}
+        <strong>{PERFIL.visualizador.label}</strong>: {PERFIL.visualizador.descricao.toLowerCase()}
+      </p>
 
       <ConfirmSheet
         open={remover !== null}
@@ -228,8 +206,7 @@ export function AbaPessoas({ viagem, ehCriador, destacarConvite }: ContextoViage
         carregando={removerMembro.isPending}
         onConfirmar={() => remover && removerMembro.mutate(remover)}
       >
-        {remover?.nome} perde o acesso a esta viagem imediatamente. Você pode convidar de novo
-        depois.
+        {remover?.nome} perde o acesso a esta viagem imediatamente. Você pode convidar de novo depois.
       </ConfirmSheet>
     </div>
   );
