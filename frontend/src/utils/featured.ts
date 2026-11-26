@@ -1,3 +1,5 @@
+import { countryName } from './format';
+
 /**
  * Destinos de inspiração para o globo da página inicial.
  *
@@ -56,6 +58,15 @@ export const LUGARES_INSPIRACAO: LugarGlobo[] = [
   { chave: 'antalya', nome: 'Antalya', pais: 'TR', lat: 36.8969, lng: 30.7133, foto: commons('7/75/Antalya_kalei%C3%A7i_2.jpg') },
   { chave: 'kuala-lumpur', nome: 'Kuala Lumpur', pais: 'MY', lat: 3.139, lng: 101.6869, foto: commons('8/8f/Batu_Caves_stairs_2022-05.jpg') },
 ];
+
+/**
+ * Nome do país para exibir junto ao lugar, ou null quando repetiria o próprio
+ * nome (Hong Kong e Macau são regiões com nome igual ao do lugar).
+ */
+export function paisDoLugar(lugar: { nome: string; pais: string }): string | null {
+  const nome = countryName(lugar.pais);
+  return nome && nome !== lugar.nome ? nome : null;
+}
 
 /** Destinos populares exibidos abaixo da busca, nesta ordem. */
 export const POPULARES = [
