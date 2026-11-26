@@ -113,29 +113,6 @@
   }
 }
 
-.globe-caption {
-  position: absolute;
-  left: 50%;
-  bottom: 8px;
-  translate: -50% 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  border-radius: var(--r-pill);
-  white-space: nowrap;
-  max-width: calc(100% - 16px);
-}
-
-.globe-caption-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--positive-fill);
-  box-shadow: 0 0 0 4px var(--positive-tint);
-  flex: none;
-}
-
 @media (max-width: 960px) {
   .hero-grid {
     grid-template-columns: minmax(0, 1fr);

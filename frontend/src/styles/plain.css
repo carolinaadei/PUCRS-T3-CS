@@ -119,12 +119,25 @@
   transition: background-color var(--dur-fast);
 }
 
+button.rank-row {
+  width: 100%;
+  border-width: 0 0 1px;
+  border-style: solid;
+  border-color: var(--separator);
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .rank-row:hover {
   background: var(--fill);
 }
 
 .rank-pos {
-  width: 28px;
+  width: 40px;
+  flex: none;
+  text-align: center;
   font-size: var(--text-title-2);
   font-weight: 750;
   letter-spacing: -0.03em;
