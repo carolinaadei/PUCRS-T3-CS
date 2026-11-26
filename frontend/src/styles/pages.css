@@ -480,3 +480,239 @@
 .cta-btn:hover {
   background: #fff;
 }
+
+/* ═════════════ Explorar ═════════════ */
+.explore-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.explore-search {
+  flex: 1 1 360px;
+  max-width: 560px;
+  padding: 6px 20px;
+}
+
+.select-compact {
+  min-height: 36px;
+  width: auto;
+  padding: 6px 36px 6px 14px;
+  border-radius: var(--r-pill);
+  font-size: var(--text-subhead);
+  background-position: right 12px center;
+}
+
+.act-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-3);
+}
+
+.act-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: 10px;
+  border: 0;
+  border-radius: var(--r-lg);
+  color: var(--text);
+  text-align: left;
+  width: 100%;
+  min-width: 0;
+}
+
+.act-thumb {
+  width: 92px;
+  height: 92px;
+  border-radius: 16px;
+  flex: none;
+}
+
+.act-cat {
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* ═════════════ Destino ═════════════ */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: var(--space-4);
+  font-weight: 600;
+  font-size: var(--text-subhead);
+}
+
+.back-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dest-hero {
+  position: relative;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  min-height: clamp(380px, 52vw, 560px);
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(12px, 2.5vw, 24px);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.dest-hero-photo {
+  position: absolute;
+  inset: 0;
+}
+
+.dest-hero-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-6);
+  max-width: 560px;
+  color: #fff;
+  --glass-bg: rgba(8, 24, 40, 0.28);
+  --glass-tint: rgba(255, 255, 255, 0.06);
+  --glass-rim: rgba(255, 255, 255, 0.24);
+  --glass-edge-hi: rgba(255, 255, 255, 0.6);
+  --glass-sheen: rgba(255, 255, 255, 0.18);
+}
+
+.dest-hero-title {
+  font-size: clamp(2.25rem, 1.6rem + 2.6vw, 3.75rem);
+}
+
+.dest-hero-country {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.9;
+  margin-bottom: var(--space-2);
+}
+
+.dest-hero-country svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dest-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--space-7);
+  margin-top: var(--space-7);
+  align-items: start;
+}
+
+.dest-desc {
+  font-size: var(--text-headline);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.dest-map {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  height: 320px;
+}
+
+@media (max-width: 960px) {
+  .dest-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.act-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  transition: background-color var(--dur-fast);
+}
+
+.act-row:hover {
+  background: var(--fill);
+}
+
+.act-row-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  flex: none;
+}
+
+/* Sheets: foto e avaliações */
+.sheet-photo {
+  width: 100%;
+  aspect-ratio: 16 / 8;
+  border-radius: var(--r-md);
+}
+
+.review {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--separator);
+}
+
+/* Lista de escolha (destinos, viagens) */
+.pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px;
+  margin: -4px;
+}
+
+.pick-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text);
+  transition: background-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+
+.pick-item:hover {
+  background: var(--fill);
+}
+
+.pick-item.is-selected {
+  background: var(--accent-tint);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.pick-item.is-static {
+  background: var(--fill);
+}
+
+.pick-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  flex: none;
+}
+
+.pick-check {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+  flex: none;
+}

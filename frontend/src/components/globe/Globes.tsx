@@ -276,9 +276,12 @@ function criarPino(parada: ParadaGlobo): HTMLElement {
   rotulo.className = 'tp-label';
   const nome = document.createElement('strong');
   nome.textContent = parada.nome;
-  const datas = document.createElement('span');
-  datas.textContent = `${formatDate(parada.chegada)} – ${formatDate(parada.saida)}`;
-  rotulo.append(nome, datas);
+  rotulo.append(nome);
+  if (parada.chegada) {
+    const datas = document.createElement('span');
+    datas.textContent = `${formatDate(parada.chegada)} – ${formatDate(parada.saida)}`;
+    rotulo.append(datas);
+  }
   raiz.append(numero, rotulo);
   return raiz;
 }
