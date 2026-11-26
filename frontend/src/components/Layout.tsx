@@ -154,22 +154,6 @@ export function Nav() {
   );
 }
 
-export function Footer() {
-  return (
-    <footer className="footer">
-      <div className="container row between wrap gap-4">
-        <div className="row gap-3">
-          <Logo compact />
-          <span className="footnote secondary">Planeje junto. Viaje melhor.</span>
-        </div>
-        <span className="footnote tertiary">
-          Projeto acadêmico · PUCRS · Construção de Software
-        </span>
-      </div>
-    </footer>
-  );
-}
-
 export function AppLayout() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -188,7 +172,6 @@ export function AppLayout() {
       <main id="conteudo">
         <Outlet />
       </main>
-      <Footer />
     </>
   );
 }

@@ -227,12 +227,6 @@
   flex: none;
 }
 
-/* ───────────── Rodapé ───────────── */
-.footer {
-  padding: var(--space-6) 0 var(--space-7);
-  border-top: 1px solid var(--separator);
-}
-
 /* ───────────── Autenticação ───────────── */
 .auth-page {
   min-height: 100dvh;
