@@ -9,7 +9,6 @@ import {
   PiggyBank,
   Route,
   Search,
-  Star,
   User,
   UserPlus,
   Users,
@@ -19,39 +18,36 @@ import { catalogoApi } from '../api/endpoints';
 import { ExploreGlobe } from '../components/globe';
 import { Glass, Photo } from '../components/ui';
 import { useAuth } from '../state/auth';
-import { countryName, formatMoney } from '../utils/format';
+import { formatMoney } from '../utils/format';
 import {
   FOTOS,
   LUGARES_INSPIRACAO,
   POPULARES,
   paisDoLugar,
-  fotoGrandeDoDestino,
+  fotoGrandeDoLugar,
   montarLugaresGlobo,
   type LugarGlobo,
 } from '../utils/featured';
-import { CATEGORIA_DESTINO } from '../utils/labels';
 
 function GlobePlaceholder() {
   return <div className="globe-placeholder" aria-hidden />;
 }
 
-function Hero() {
+type Foco = { lugar: LugarGlobo; seq: number } | null;
+
+function Hero({
+  lugares,
+  foco,
+  onFocar,
+}: {
+  lugares: LugarGlobo[];
+  foco: Foco;
+  onFocar: (lugar: LugarGlobo) => void;
+}) {
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const [busca, setBusca] = useState('');
   const [ativo, setAtivo] = useState<LugarGlobo | null>(null);
-  const [foco, setFoco] = useState<{ lugar: LugarGlobo; seq: number } | null>(null);
-
-  const destinos = useQuery({
-    queryKey: ['catalogo', 'destinos', 'globo'],
-    queryFn: () => catalogoApi.destinos({ tamanho_pagina: 100 }),
-    staleTime: 5 * 60_000,
-  });
-
-  const lugares = useMemo(
-    () => (destinos.data ? montarLugaresGlobo(destinos.data.itens) : LUGARES_INSPIRACAO),
-    [destinos.data],
-  );
 
   const buscar = (event: FormEvent) => {
     event.preventDefault();
@@ -93,14 +89,14 @@ function Hero() {
 
           <div className="row wrap gap-2" role="group" aria-label="Destinos populares">
             <span className="footnote tertiary">Populares:</span>
-            {POPULARES.map((lugar) => (
+            {POPULARES.slice(0, 4).map((lugar) => (
               <button
                 key={lugar.chave}
                 type="button"
                 className="chip chip-link"
                 title={[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')}
                 aria-label={`Mostrar ${[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')} no globo`}
-                onClick={() => setFoco({ lugar, seq: Date.now() })}
+                onClick={() => onFocar(lugar)}
               >
                 <MapPin aria-hidden /> {lugar.nome}
               </button>
@@ -123,17 +119,10 @@ function Hero() {
               onSelect={(l) => l.destinoId && navigate(`/explorar/destinos/${l.destinoId}`)}
             />
           </Suspense>
-          <Glass className="globe-caption" aria-live="polite">
-            <span className="globe-caption-dot" aria-hidden />
-            {ativo ? (
-              <span className="subhead">
-                <strong>{ativo.nome}</strong>
-                {paisDoLugar(ativo) && <span className="secondary"> · {paisDoLugar(ativo)}</span>}
-              </span>
-            ) : (
-              <span className="subhead secondary">Gire o globo para descobrir lugares</span>
-            )}
-          </Glass>
+          {/* Sem rótulo visível: o cartão do globo já mostra o lugar. Leitores de tela ainda o ouvem. */}
+          <p className="sr-only" aria-live="polite">
+            {ativo ? [ativo.nome, paisDoLugar(ativo)].filter(Boolean).join(', ') : ''}
+          </p>
         </div>
       </div>
     </section>
@@ -286,62 +275,62 @@ function Vitrine() {
   );
 }
 
-function Ranking() {
-  const ranking = useQuery({
-    queryKey: ['catalogo', 'ranking'],
-    queryFn: () => catalogoApi.ranking(6),
-    staleTime: 5 * 60_000,
-  });
-
-  const itens = ranking.data?.itens ?? [];
-  if (ranking.isError || (!ranking.isLoading && itens.length === 0)) return null;
+function Ranking({
+  lugares,
+  onFocar,
+}: {
+  lugares: LugarGlobo[];
+  onFocar: (lugar: LugarGlobo) => void;
+}) {
+  const navigate = useNavigate();
+  // A lista vem de POPULARES; o catálogo diz quais destinos já podem entrar num roteiro.
+  const noCatalogo = new Map(
+    lugares.filter((l) => l.destinoId).map((l) => [l.chave, l.destinoId as number]),
+  );
 
   return (
     <section className="section">
       <div className="container">
         <div className="section-head section-head-row">
           <div className="stack gap-2">
-            <span className="eyebrow">Mais bem avaliados</span>
+            <span className="eyebrow">Mais populares</span>
             <h2 className="title-1">Destinos que os viajantes amaram.</h2>
           </div>
           <Link to="/explorar" className="btn btn-secondary">
             Ver todos <ArrowRight />
           </Link>
         </div>
-        <div className="dest-grid">
-          {ranking.isLoading &&
-            Array.from({ length: 3 }, (_, i) => (
-              <div key={i} className="skeleton" style={{ aspectRatio: '4 / 5' }} />
-            ))}
-          {itens.map((item) => (
-            <Link
-              key={item.destino.id}
-              to={`/explorar/destinos/${item.destino.id}`}
-              className="dest-card"
-            >
-              <Photo
-                src={fotoGrandeDoDestino(item.destino.nome, item.destino.foto_url)}
-                alt={item.destino.nome}
-                className="dest-card-photo"
-              />
-              <span className="dest-rank chip chip-glass">#{item.posicao}</span>
-              <Glass className="dest-card-info">
-                <div className="row between gap-2">
-                  <h3 className="headline truncate">{item.destino.nome}</h3>
-                  <span className="row gap-1 footnote">
-                    <Star aria-hidden className="star-inline" fill="currentColor" />
-                    <strong className="tabular">{item.media_avaliacoes.toFixed(1)}</strong>
-                  </span>
-                </div>
-                <span className="footnote secondary truncate">
-                  {countryName(item.destino.pais_codigo)} · {CATEGORIA_DESTINO[item.destino.categoria]}{' '}
-                  · {item.total_avaliacoes}{' '}
-                  {item.total_avaliacoes === 1 ? 'avaliação' : 'avaliações'}
-                </span>
-              </Glass>
-            </Link>
-          ))}
-        </div>
+        <ol className="dest-grid dest-grid-5">
+          {POPULARES.map((lugar, i) => {
+            const destinoId = noCatalogo.get(lugar.chave);
+            const pais = paisDoLugar(lugar);
+            return (
+              <li key={lugar.chave}>
+                <button
+                  type="button"
+                  className="dest-card"
+                  aria-label={
+                    destinoId
+                      ? `${i + 1}º, ${lugar.nome}: abrir o destino`
+                      : `${i + 1}º, ${lugar.nome}: mostrar no globo`
+                  }
+                  onClick={() =>
+                    destinoId ? navigate(`/explorar/destinos/${destinoId}`) : onFocar(lugar)
+                  }
+                >
+                  <Photo src={fotoGrandeDoLugar(lugar)} alt="" className="dest-card-photo" />
+                  <span className="dest-rank chip chip-glass">#{i + 1}</span>
+                  <Glass className="dest-card-info">
+                    <h3 className="headline truncate">{lugar.nome}</h3>
+                    <span className="footnote secondary truncate">
+                      {[pais, destinoId ? 'No catálogo' : 'Ver no globo'].filter(Boolean).join(' · ')}
+                    </span>
+                  </Glass>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </section>
   );
@@ -367,13 +356,30 @@ function ChamadaFinal() {
 }
 
 export default function Landing() {
+  const [foco, setFoco] = useState<Foco>(null);
+  const destinos = useQuery({
+    queryKey: ['catalogo', 'destinos', 'globo'],
+    queryFn: () => catalogoApi.destinos({ tamanho_pagina: 100 }),
+    staleTime: 5 * 60_000,
+  });
+  const lugares = useMemo(
+    () => (destinos.data ? montarLugaresGlobo(destinos.data.itens) : LUGARES_INSPIRACAO),
+    [destinos.data],
+  );
+
+  // Destinos fora do catálogo levam ao globo: sobe a página e gira até o lugar.
+  const focar = (lugar: LugarGlobo) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFoco({ lugar, seq: Date.now() });
+  };
+
   return (
     <>
-      <Hero />
+      <Hero lugares={lugares} foco={foco} onFocar={(l) => setFoco({ lugar: l, seq: Date.now() })} />
       <JeitosDeViajar />
       <ComoFunciona />
       <Vitrine />
-      <Ranking />
+      <Ranking lugares={lugares} onFocar={focar} />
       <ChamadaFinal />
     </>
   );

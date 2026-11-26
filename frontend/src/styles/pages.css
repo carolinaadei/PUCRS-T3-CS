@@ -113,29 +113,6 @@
   }
 }
 
-.globe-caption {
-  position: absolute;
-  left: 50%;
-  bottom: 8px;
-  translate: -50% 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  border-radius: var(--r-pill);
-  white-space: nowrap;
-  max-width: calc(100% - 16px);
-}
-
-.globe-caption-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--positive-fill);
-  box-shadow: 0 0 0 4px var(--positive-tint);
-  flex: none;
-}
-
 @media (max-width: 960px) {
   .hero-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -433,6 +410,40 @@
 
 .dest-card-info .secondary {
   color: rgba(11, 26, 39, 0.62);
+}
+
+/* Populares: 10 cartões em duas fileiras de 5. */
+.dest-grid-5 {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.dest-grid-5 .dest-card-info {
+  padding: 12px 14px;
+}
+
+button.dest-card {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (max-width: 1080px) {
+  .dest-grid-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .dest-grid-5 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .star-inline {
