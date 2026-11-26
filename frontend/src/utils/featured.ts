@@ -93,10 +93,8 @@ export const POPULARES = [
 
 /** Fotos das seções de apresentação (verificadas manualmente). */
 export const FOTOS = {
-  individual: unsplash('1501555088652-021faa106b9b', 900, 1100),
-  amigos: unsplash('1539635278303-d4002c07eae3', 900, 1100),
-  familia: unsplash('1511895426328-dc8714191300', 900, 1100),
-  planejamento: unsplash('1488646953014-85cb44e25828', 1400, 900),
+  individual: unsplash('1501555088652-021faa106b9b', 1280, 960),
+  grupo: unsplash('1539635278303-d4002c07eae3', 1280, 960),
   lago: unsplash('1476514525535-07fb3b4ae5f1', 1600, 900),
 };
 
@@ -179,7 +177,6 @@ const FOTOS_LOCAIS = new Set([
   '1502602898657-3e91760cbb34-grande.jpg',
   '1502602898657-3e91760cbb34-mini.jpg',
   '1506973035872-a4ec16b8e8d9-mini.jpg',
-  '1511895426328-dc8714191300-grande.jpg',
   '1512453979798-5ea266f8880c-grande.jpg',
   '1512453979798-5ea266f8880c-mini.jpg',
   '1513635269975-59663e0ac1ad-grande.jpg',

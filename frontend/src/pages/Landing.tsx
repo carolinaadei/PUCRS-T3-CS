@@ -4,14 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ArrowRight,
   CalendarDays,
-  Heart,
   MapPin,
   PiggyBank,
   Route,
   Search,
-  User,
+  Star,
   UserPlus,
-  Users,
 } from 'lucide-react';
 import { catalogoApi } from '../api/endpoints';
 import { ExploreGlobe } from '../components/globe';
@@ -126,7 +124,7 @@ function Hero({
   );
 }
 
-type Jeito = 'individual' | 'amigos' | 'familia';
+type Jeito = 'individual' | 'grupo';
 
 const JEITOS: Record<Jeito, { titulo: string; foto: string; texto: string; pontos: string[] }> = {
   individual: {
@@ -135,38 +133,31 @@ const JEITOS: Record<Jeito, { titulo: string; foto: string; texto: string; ponto
     texto: 'Organize cada parada e acompanhe o orçamento sem planilhas.',
     pontos: ['Roteiro com várias cidades', 'Agenda por dia', 'Saldo do orçamento sempre à vista'],
   },
-  amigos: {
+  grupo: {
     titulo: 'Todo mundo no mesmo roteiro.',
-    foto: FOTOS.amigos,
-    texto: 'Convide a turma por email. Quem edita ajusta o plano; quem acompanha avalia os passeios.',
+    foto: FOTOS.grupo,
+    texto:
+      'Amigos ou família, convidados por email. Quem edita ajusta o plano; quem acompanha vê tudo e avalia os passeios.',
     pontos: ['Convites por email', 'Editores e visualizadores', 'Avisos quando algo muda'],
-  },
-  familia: {
-    titulo: 'Do avô ao caçula.',
-    foto: FOTOS.familia,
-    texto: 'Datas, hospedagens e atividades num só lugar, visíveis para quem vai junto.',
-    pontos: ['Estadias em cada parada', 'Custos por tipo de atividade', 'Mapa da rota no globo'],
   },
 };
 
-/** Um único painel com seletor no lugar de três cartões. */
+/** Um único painel com seletor no lugar de vários cartões. */
 function JeitosDeViajar() {
-  const [jeito, setJeito] = useState<Jeito>('amigos');
+  const [jeito, setJeito] = useState<Jeito>('individual');
   const j = JEITOS[jeito];
   return (
     <section className="section">
       <div className="container">
         <div className="section-head section-head-center">
-          <span className="eyebrow">Para cada jeito de viajar</span>
-          <h2 className="title-1">Sozinho, com a turma ou em família.</h2>
+          <h2 className="title-1">Para cada jeito de viajar</h2>
           <Segmented<Jeito>
             label="Jeito de viajar"
             value={jeito}
             onChange={setJeito}
             options={[
-              { value: 'individual', label: 'Individual', icon: <User aria-hidden /> },
-              { value: 'amigos', label: 'Amigos', icon: <Users aria-hidden /> },
-              { value: 'familia', label: 'Família', icon: <Heart aria-hidden /> },
+              { value: 'individual', label: 'Individual' },
+              { value: 'grupo', label: 'Em grupo' },
             ]}
           />
         </div>
@@ -248,6 +239,18 @@ function Ranking({
   const noCatalogo = new Map(
     lugares.filter((l) => l.destinoId).map((l) => [l.chave, l.destinoId as number]),
   );
+  // Média e total vêm do ranking público, que agrega as avaliações das atividades.
+  const ranking = useQuery({
+    queryKey: ['catalogo', 'ranking', 50],
+    queryFn: () => catalogoApi.ranking(50),
+    staleTime: 5 * 60_000,
+  });
+  const notas = new Map(
+    (ranking.data?.itens ?? []).map((i) => [
+      i.destino.id,
+      { media: i.media_avaliacoes, total: i.total_avaliacoes },
+    ]),
+  );
 
   return (
     <section className="section">
@@ -264,16 +267,19 @@ function Ranking({
         <ol className="rank-list">
           {POPULARES.map((lugar, i) => {
             const destinoId = noCatalogo.get(lugar.chave);
+            const nota = destinoId ? notas.get(destinoId) : undefined;
             return (
               <li key={lugar.chave}>
                 <button
                   type="button"
                   className="rank-row"
-                  aria-label={
-                    destinoId
-                      ? `${i + 1}º, ${lugar.nome}: abrir o destino`
-                      : `${i + 1}º, ${lugar.nome}: mostrar no globo`
-                  }
+                  aria-label={[
+                    `${i + 1}º, ${lugar.nome}`,
+                    nota && `nota ${nota.media.toFixed(1)} em ${nota.total} avaliações`,
+                    destinoId ? 'abrir o destino' : 'mostrar no globo',
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
                   onClick={() =>
                     destinoId ? navigate(`/explorar/destinos/${destinoId}`) : onFocar(lugar)
                   }
@@ -284,9 +290,17 @@ function Ranking({
                     <strong className="headline truncate">{lugar.nome}</strong>
                     <span className="footnote secondary truncate">{paisDoLugar(lugar) ?? ''}</span>
                   </span>
-                  <span className="footnote secondary" style={{ flex: 'none' }}>
-                    {destinoId ? 'Abrir destino' : 'Ver no globo'}
-                  </span>
+                  {nota ? (
+                    <span className="row gap-1 subhead" style={{ flex: 'none' }}>
+                      <Star aria-hidden className="star-inline" fill="currentColor" />
+                      <strong className="tabular">{nota.media.toFixed(1).replace('.', ',')}</strong>
+                      <span className="footnote tertiary">({nota.total})</span>
+                    </span>
+                  ) : (
+                    <span className="footnote tertiary" style={{ flex: 'none' }}>
+                      Sem avaliações
+                    </span>
+                  )}
                 </button>
               </li>
             );
