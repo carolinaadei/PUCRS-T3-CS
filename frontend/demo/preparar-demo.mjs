@@ -306,6 +306,66 @@ const VIAGENS = [
   },
 ];
 
+/*
+ * Viagens já feitas por Bruno, Carla e Diego pelos destinos populares da página
+ * inicial. Existem para que esses destinos tenham avaliações reais na API.
+ * Cada atividade com `nota` é avaliada pelo dono da viagem.
+ */
+const av = (nota, comentario = null) => ({ nota, comentario });
+
+const VIAGENS_VIAJANTES = [
+  {
+    dono: 'bruno',
+    nome: 'Volta ao mundo em 2025',
+    descricao: 'Cinco semanas de mochilão por três continentes.',
+    inicio: '2025-04-01',
+    fim: '2025-05-06',
+    status: 'concluida',
+    paradas: [
+      ['Nova York', '2025-04-01', '2025-04-05', [['Estátua da Liberdade', av(5, 'Vá na primeira balsa do dia.')], ['Musical na Broadway', av(5)]]],
+      ['Londres', '2025-04-05', '2025-04-09', [['Museu Britânico', av(5, 'Dá para passar o dia inteiro.')], ['London Eye', av(4)]]],
+      ['Paris', '2025-04-09', '2025-04-13', [['Torre Eiffel', av(5)], ['Museu do Louvre', av(4, 'Lotado, mas imperdível.')]]],
+      ['Istambul', '2025-04-13', '2025-04-17', [['Santa Sofia', av(5, 'Impressionante por dentro.')], ['Cruzeiro pelo Bósforo', av(5)]]],
+      ['Antalya', '2025-04-17', '2025-04-20', [['Kaleiçi, a cidade velha', av(4)], ['Praia de Konyaaltı', av(5, 'Mar azul com as montanhas atrás.')]]],
+      ['Dubai', '2025-04-20', '2025-04-23', [['Burj Khalifa', av(5, 'Reserve o horário do pôr do sol.')], ['Safári no deserto', av(4)]]],
+      ['Bangkok', '2025-04-23', '2025-04-27', [['Wat Arun', av(5)], ['Comida de rua em Yaowarat', av(5, 'A melhor comida da viagem.')]]],
+      ['Kuala Lumpur', '2025-04-27', '2025-04-30', [['Batu Caves', av(4, 'Muitos degraus, cuidado com os macacos.')], ['Torres Petronas', av(4)]]],
+      ['Hong Kong', '2025-04-30', '2025-05-04', [['Victoria Peak', av(5, 'Suba no fim da tarde e fique para a noite.')], ['Star Ferry pela baía', av(4)]]],
+      ['Macau', '2025-05-04', '2025-05-06', [['Ruínas de São Paulo', av(4)], ['Largo do Senado', av(4)]]],
+    ],
+  },
+  {
+    dono: 'carla',
+    nome: 'Europa e Oriente Médio',
+    descricao: 'Férias de setembro entre Londres, Paris, Turquia e Dubai.',
+    inicio: '2025-09-05',
+    fim: '2025-09-25',
+    status: 'concluida',
+    paradas: [
+      ['Londres', '2025-09-05', '2025-09-09', [['Museu Britânico', av(5)], ['London Eye', av(5, 'Vista linda do Parlamento.')]]],
+      ['Paris', '2025-09-09', '2025-09-13', [['Torre Eiffel', av(5, 'Subimos à noite, mágico.')], ['Museu do Louvre', av(5)]]],
+      ['Istambul', '2025-09-13', '2025-09-17', [['Santa Sofia', av(5)], ['Cruzeiro pelo Bósforo', av(5, 'Melhor jeito de ver a cidade.')]]],
+      ['Antalya', '2025-09-17', '2025-09-21', [['Kaleiçi, a cidade velha', av(5, 'Ruelas charmosas e ótimos restaurantes.')], ['Praia de Konyaaltı', av(4)]]],
+      ['Dubai', '2025-09-21', '2025-09-25', [['Burj Khalifa', av(4)], ['Safári no deserto', av(4, 'Divertido, mas muito quente em setembro.')]]],
+    ],
+  },
+  {
+    dono: 'diego',
+    nome: 'Ásia e Nova York',
+    descricao: 'Viagem a trabalho que virou férias.',
+    inicio: '2025-11-01',
+    fim: '2025-11-22',
+    status: 'concluida',
+    paradas: [
+      ['Nova York', '2025-11-01', '2025-11-05', [['Estátua da Liberdade', av(4)], ['Musical na Broadway', av(5, 'Vale cada centavo.')]]],
+      ['Bangkok', '2025-11-05', '2025-11-10', [['Wat Arun', av(5, 'Lindo ao entardecer, visto do outro lado do rio.')], ['Comida de rua em Yaowarat', av(4)]]],
+      ['Kuala Lumpur', '2025-11-10', '2025-11-14', [['Batu Caves', av(5)], ['Torres Petronas', av(4)]]],
+      ['Hong Kong', '2025-11-14', '2025-11-19', [['Victoria Peak', av(5)], ['Star Ferry pela baía', av(5, 'Barato e com a melhor vista.')]]],
+      ['Macau', '2025-11-19', '2025-11-22', [['Ruínas de São Paulo', av(5, 'Fácil de visitar a pé desde o Largo do Senado.')], ['Largo do Senado', av(4)]]],
+    ],
+  },
+];
+
 /* ───────────── Infraestrutura ───────────── */
 
 const log = (...m) => console.log('·', ...m);
@@ -344,8 +404,8 @@ async function todasAsViagens(token) {
   }
 }
 
-function importarCatalogo() {
-  const json = readFileSync(path.join(AQUI, 'catalogo-demo.json'));
+function importarCatalogo(arquivo) {
+  const json = readFileSync(path.join(AQUI, arquivo));
   const r = spawnSync(
     'docker',
     ['compose', 'exec', '-T', 'api', 'python', '-m', 'app.adapters.inbound.cli.importar_catalogo'],
@@ -356,10 +416,18 @@ function importarCatalogo() {
   log(saida);
 }
 
+// O importador recusa repetir `id_externo`; cada arquivo é importado uma única vez.
+const CATALOGOS = [
+  { arquivo: 'catalogo-demo.json', marcador: 'Tóquio' },
+  { arquivo: 'catalogo-populares.json', marcador: 'Bangkok' },
+];
+
 async function garantirCatalogo() {
-  const r = await api('GET', `/catalogo/destinos?nome=${enc('Tóquio')}`);
-  if (r.itens.length) return log('Catálogo de demonstração já importado.');
-  importarCatalogo();
+  for (const { arquivo, marcador } of CATALOGOS) {
+    const r = await api('GET', `/catalogo/destinos?nome=${enc(marcador)}`);
+    if (r.itens.some((d) => d.nome === marcador)) log(`${arquivo}: já importado.`);
+    else importarCatalogo(arquivo);
+  }
 }
 
 const cacheDestinos = new Map();
@@ -494,7 +562,54 @@ async function main() {
     log(`Criada: ${spec.nome} [${spec.status}]${quem ? ` com ${quem}` : ' — sozinha'}`);
   }
 
-  // 3. Começa a demonstração sem uma pilha de avisos gerados pela própria carga.
+  // 3. Viagens já feitas pelos amigos nos destinos populares, com avaliações.
+  const nomesViajantes = new Set(VIAGENS_VIAJANTES.map((v) => v.nome));
+  for (const conta of new Set(VIAGENS_VIAJANTES.map((v) => v.dono))) {
+    const dono = contas[conta];
+    for (const v of await todasAsViagens(dono.token)) {
+      if (v.papel_usuario === 'criador' && nomesViajantes.has(v.nome)) {
+        await api('DELETE', `/viagens/${v.id}`, dono.token);
+      }
+    }
+  }
+  for (const spec of VIAGENS_VIAJANTES) {
+    const dono = contas[spec.dono];
+    const viagem = await api('POST', '/viagens', dono.token, {
+      nome: spec.nome,
+      descricao: spec.descricao,
+      data_inicio: spec.inicio,
+      data_fim: spec.fim,
+    });
+    let avaliacoes = 0;
+    for (const [nomeDestino, chegada, saida, atividades] of spec.paradas) {
+      const catalogo = await destinoDoCatalogo(nomeDestino);
+      const parada = await api('POST', `/viagens/${viagem.id}/destinos`, dono.token, {
+        destino_catalogo_id: catalogo.id,
+        data_chegada: chegada,
+        data_saida: saida,
+      });
+      for (const [nomeAtividade, avaliacao] of atividades) {
+        const catalogoAtividade = catalogo.atividades.get(nomeAtividade);
+        if (!catalogoAtividade) throw new Error(`Atividade “${nomeAtividade}” não existe em ${nomeDestino}.`);
+        const criada = await api('POST', `/viagens/${viagem.id}/destinos/${parada.id}/atividades`, dono.token, {
+          catalogo_atividade_id: catalogoAtividade,
+          data: chegada,
+          status: 'concluida',
+        });
+        await api(
+          'PUT',
+          `/viagens/${viagem.id}/destinos/${parada.id}/atividades/${criada.id}/avaliacao`,
+          dono.token,
+          avaliacao,
+        );
+        avaliacoes += 1;
+      }
+    }
+    await api('PATCH', `/viagens/${viagem.id}`, dono.token, { status: spec.status });
+    log(`Criada: ${spec.nome} [${dono.nome.split(' ')[0]}] — ${avaliacoes} avaliações`);
+  }
+
+  // 4. Começa a demonstração sem uma pilha de avisos gerados pela própria carga.
   for (const c of Object.values(contas)) await api('POST', '/notificacoes/marcar-todas-lidas', c.token);
 
   const paises = await api('GET', '/usuarios/me/paises-visitados', ana.token);
