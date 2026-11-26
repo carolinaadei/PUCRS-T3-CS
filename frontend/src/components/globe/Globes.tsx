@@ -3,7 +3,7 @@ import Globe, { type GlobeMethods } from 'react-globe.gl';
 import { MeshPhongMaterial } from 'three';
 import { useTema } from '../../state/theme';
 import { countryName, formatDate } from '../../utils/format';
-import { resolverFoto, type LugarGlobo } from '../../utils/featured';
+import { paisDoLugar, resolverFoto, type LugarGlobo } from '../../utils/featured';
 import {
   alpha2DoPais,
   corTerra,
@@ -136,9 +136,13 @@ function criarMarcador(lugar: LugarGlobo): HTMLElement {
   meta.className = 'gm-meta';
   const nome = document.createElement('strong');
   nome.textContent = lugar.nome;
-  const pais = document.createElement('span');
-  pais.textContent = countryName(lugar.pais);
-  meta.append(nome, pais);
+  meta.append(nome);
+  const nomePais = paisDoLugar(lugar);
+  if (nomePais) {
+    const pais = document.createElement('span');
+    pais.textContent = nomePais;
+    meta.append(pais);
+  }
   cartao.append(img, meta);
 
   raiz.append(pulso, ponto, cartao);
@@ -152,6 +156,9 @@ export function ExploreGlobe({ lugares, onSelect, onAtivoChange, foco }: Explore
   const material = useMaterial(paleta.oceano, paleta.brilho);
   const marcadores = useRef(new Map<string, HTMLElement>());
   const ativoRef = useRef<string | null>(null);
+  // Lugar escolhido nos populares: fica ativo até a rotação voltar ou alguém arrastar.
+  // Sem a trava, um vizinho próximo (Macau, a 60 km de Hong Kong) podia “roubar” o cartão.
+  const travado = useRef<string | null>(null);
   const onSelectRef = useRef(onSelect);
   const onAtivoRef = useRef(onAtivoChange);
   onSelectRef.current = onSelect;
@@ -172,7 +179,10 @@ export function ExploreGlobe({ lugares, onSelect, onAtivoChange, foco }: Explore
       });
       cartao.addEventListener('pointerleave', () => {
         const controls = globeRef.current?.controls();
-        if (controls && !movimentoReduzido()) controls.autoRotate = true;
+        if (controls && !movimentoReduzido()) {
+          travado.current = null;
+          controls.autoRotate = true;
+        }
       });
       marcadores.current.set(lugar.chave, el);
     }
@@ -189,6 +199,9 @@ export function ExploreGlobe({ lugares, onSelect, onAtivoChange, foco }: Explore
     controls.autoRotateSpeed = 0.55;
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
+    controls.addEventListener('start', () => {
+      travado.current = null;
+    });
     globe.pointOfView({ lat: 18, lng: -40, altitude: 2.35 }, 0);
     setPronto(true);
   }, []);
@@ -198,11 +211,13 @@ export function ExploreGlobe({ lugares, onSelect, onAtivoChange, foco }: Explore
     if (!pronto || !foco || !globe) return;
     const controls = globe.controls();
     controls.autoRotate = false;
+    travado.current = foco.lugar.chave;
     globe.pointOfView(
       { lat: foco.lugar.lat, lng: foco.lugar.lng, altitude: globe.pointOfView().altitude },
       movimentoReduzido() ? 0 : 1100,
     );
     const retomar = window.setTimeout(() => {
+      travado.current = null;
       if (!movimentoReduzido()) controls.autoRotate = true;
     }, 9000);
     return () => window.clearTimeout(retomar);
@@ -219,22 +234,25 @@ export function ExploreGlobe({ lugares, onSelect, onAtivoChange, foco }: Explore
       ultimo = t;
       const globe = globeRef.current;
       if (!globe) return;
-      const pov = globe.pointOfView();
-      let melhor: LugarGlobo | null = null;
-      let menor = Infinity;
-      for (const lugar of lugares) {
-        const d = distanciaAngular(pov.lat, pov.lng, lugar.lat, lugar.lng);
-        if (d < menor) {
-          menor = d;
-          melhor = lugar;
+      let alvo = travado.current ? (lugares.find((l) => l.chave === travado.current) ?? null) : null;
+      if (!alvo) {
+        const pov = globe.pointOfView();
+        let menor = Infinity;
+        for (const lugar of lugares) {
+          const d = distanciaAngular(pov.lat, pov.lng, lugar.lat, lugar.lng);
+          if (d < menor) {
+            menor = d;
+            alvo = lugar;
+          }
         }
+        if (menor >= 42) alvo = null;
       }
-      const chave = melhor && menor < 42 ? melhor.chave : null;
+      const chave = alvo?.chave ?? null;
       if (chave === ativoRef.current) return;
       if (ativoRef.current) marcadores.current.get(ativoRef.current)?.classList.remove('is-active');
       if (chave) marcadores.current.get(chave)?.classList.add('is-active');
       ativoRef.current = chave;
-      onAtivoRef.current?.(chave ? melhor : null);
+      onAtivoRef.current?.(alvo);
     };
     frame = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(frame);
