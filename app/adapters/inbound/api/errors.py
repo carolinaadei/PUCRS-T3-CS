@@ -1,0 +1,54 @@
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+from app.domain.errors import (
+    AcessoNegado,
+    AtividadeCatalogoNaoEncontrada,
+    AtividadeViagemNaoEncontrada,
+    ContaComViagensCompartilhadas,
+    ConviteInvalido,
+    ConviteJaAceito,
+    ConviteNaoEncontrado,
+    DestinoCatalogoNaoEncontrado,
+    DestinoViagemNaoEncontrado,
+    ErroNegocio,
+    FalhaEnvioConvite,
+    MembroJaParticipa,
+    MembroNaoEncontrado,
+    NaoAutenticado,
+    NotificacaoNaoEncontrada,
+    UsuarioNaoEncontrado,
+    ViagemNaoEncontrada,
+)
+
+
+async def tratar_erro_negocio(request: Request, error: ErroNegocio) -> JSONResponse:
+    # Mantem o contrato existente: email duplicado e dados invalidos retornam 400.
+    status = 400
+    headers = None
+    if isinstance(error, NaoAutenticado):
+        status = 401
+        headers = {"WWW-Authenticate": "Bearer"}
+    elif isinstance(error, AcessoNegado):
+        status = 403
+    elif isinstance(error, (MembroJaParticipa, ConviteJaAceito, ContaComViagensCompartilhadas)):
+        status = 409
+    elif isinstance(error, FalhaEnvioConvite):
+        status = 503
+    elif isinstance(
+        error,
+        (
+            UsuarioNaoEncontrado,
+            ViagemNaoEncontrada,
+            ConviteInvalido,
+            ConviteNaoEncontrado,
+            MembroNaoEncontrado,
+            AtividadeCatalogoNaoEncontrada,
+            AtividadeViagemNaoEncontrada,
+            DestinoCatalogoNaoEncontrado,
+            DestinoViagemNaoEncontrado,
+            NotificacaoNaoEncontrada,
+        ),
+    ):
+        status = 404
+    return JSONResponse(status_code=status, content={"detail": str(error)}, headers=headers)

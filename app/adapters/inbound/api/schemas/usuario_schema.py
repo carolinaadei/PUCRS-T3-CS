@@ -1,0 +1,53 @@
+from datetime import datetime
+
+from pydantic import BaseModel, EmailStr, Field
+
+from app.domain.entities.usuario import Usuario
+
+
+class CriarUsuarioRequest(BaseModel):
+    nome: str = Field(examples=["Livia Bampi"])
+    email: EmailStr = Field(examples=["livia@example.com"])
+    senha: str = Field(
+        min_length=8,
+        examples=["senhaSegura123"],
+        description="Senha em texto puro; o backend a converte em hash antes de persistir.",
+    )
+
+
+class UsuarioResponse(BaseModel):
+    id: int = Field(examples=[1])
+    nome: str = Field(examples=["Livia Bampi"])
+    email: EmailStr = Field(examples=["livia@example.com"])
+    criado_em: datetime = Field(
+        examples=["2026-10-29T14:30:00Z"],
+        description="Data e hora do cadastro da conta (UTC).",
+    )
+
+    @classmethod
+    def de_usuario(cls, usuario: Usuario) -> "UsuarioResponse":
+        return cls(
+            id=usuario.id,
+            nome=usuario.nome,
+            email=usuario.email,
+            criado_em=usuario.criado_em,
+        )
+
+
+class ResumoUsuariosResponse(BaseModel):
+    total_usuarios: int = Field(ge=0, examples=[5], description="Total de contas cadastradas.")
+
+
+class AtualizarUsuarioRequest(BaseModel):
+    nome: str | None = Field(
+        default=None,
+        min_length=1,
+        examples=["Livia Bampi"],
+        description="Campos omitidos (ou nulos) permanecem inalterados.",
+    )
+    email: EmailStr | None = Field(default=None, examples=["livia@example.com"])
+
+
+class AlterarSenhaRequest(BaseModel):
+    senha_atual: str = Field(examples=["senhaSegura123"])
+    senha_nova: str = Field(min_length=8, examples=["novaSenhaForte456"])

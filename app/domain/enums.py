@@ -1,0 +1,66 @@
+"""Vocabulário fechado do domínio.
+
+Os valores aqui são os mesmos gravados no banco (colunas texto com CHECK) e
+expostos na API. Ver docs/decisoes-de-produto.md.
+"""
+
+from enum import StrEnum
+
+
+class PapelMembro(StrEnum):
+    """Papel de um colaborador na viagem.
+
+    O criador não é um membro: ele é identificado por `viagem.criador_id`.
+    """
+
+    EDITOR = "editor"
+    VISUALIZADOR = "visualizador"
+
+
+class StatusViagem(StrEnum):
+    """Status definido pelos participantes (RF07); qualquer transição é permitida."""
+
+    PLANEJANDO = "planejando"
+    CONFIRMADA = "confirmada"
+    CONCLUIDA = "concluida"
+
+
+class StatusAtividade(StrEnum):
+    PENDENTE = "pendente"
+    CONFIRMADA = "confirmada"
+    CONCLUIDA = "concluida"
+    CANCELADA = "cancelada"  # Somente leitura/preservação de registros legados.
+
+
+class CategoriaDestino(StrEnum):
+    CIDADE = "cidade"
+    PRAIA = "praia"
+    NATUREZA = "natureza"
+    CULTURAL = "cultural"
+
+
+class CategoriaAtividade(StrEnum):
+    """Tipos de atividade definidos no documento original de arquitetura."""
+
+    PASSEIO = "passeio"
+    REFEICAO = "refeicao"
+    HOSPEDAGEM = "hospedagem"
+    TRANSPORTE = "transporte"
+    OUTRO = "outro"
+
+
+class FonteCatalogo(StrEnum):
+    """Origem de um registro do catálogo; com `id_externo`, identifica o local no fornecedor."""
+
+    MANUAL = "manual"  # Curadoria da equipe (importador JSON e seed).
+    GEOAPIFY = "geoapify"
+
+
+class TipoNotificacao(StrEnum):
+    MEMBRO_ENTROU = "membro_entrou"
+    PAPEL_ALTERADO = "papel_alterado"
+    MEMBRO_REMOVIDO = "membro_removido"
+    VIAGEM_EXCLUIDA = "viagem_excluida"
+    VIAGEM_ALTERADA = "viagem_alterada"
+    ROTEIRO_ALTERADO = "roteiro_alterado"
+    ATIVIDADE_ALTERADA = "atividade_alterada"

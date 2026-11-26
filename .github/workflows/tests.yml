@@ -1,0 +1,115 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: viajajunto
+          POSTGRES_PASSWORD: viajajunto
+          POSTGRES_DB: viajajunto_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U viajajunto -d viajajunto_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+
+      # Banco exclusivo de testes; as migrações são aplicadas pelo conftest.py e os
+      # testes falham (não são ignorados) se ele estiver indisponível.
+      TEST_DATABASE_URL: postgresql+psycopg2://viajajunto:viajajunto@localhost:5432/viajajunto_test
+      APP_ENV: test
+      JWT_SECRET_KEY: ci-test-secret-key-com-pelo-menos-32-bytes
+
+      TEST_REDIS_URL: redis://localhost:6379/15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests with coverage
+        run: >-
+          pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html
+          --junitxml=test-results/junit.xml
+
+      - name: Verify integrations actually ran
+        run: python -m tests.support.verificar_ci test-results/junit.xml
+
+      - name: Measure backend with documented dataset
+        run: >-
+          python -m tests.performance.medir_backend --amostras 100
+          --saida test-results/desempenho-backend.json
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+            test-results/
+
+  sonarqube:
+    name: SonarQube Quality Gate
+    needs: pytest
+    # O plano gratuito do SonarCloud só analisa a branch principal e pull requests;
+    # pushes em outras branches (ex.: develop) seriam recusados.
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download test coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+
+      - name: Check analysis prerequisites
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::Configure the SONAR_TOKEN repository secret."
+            exit 1
+          fi
+          test -s coverage.xml
+
+      - name: SonarQube scan and Quality Gate
+        uses: SonarSource/sonarqube-scan-action@v8.2.1
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
