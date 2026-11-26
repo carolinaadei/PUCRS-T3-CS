@@ -99,6 +99,8 @@ interface ExploreGlobeProps {
   lugares: LugarGlobo[];
   onSelect?: (lugar: LugarGlobo) => void;
   onAtivoChange?: (lugar: LugarGlobo | null) => void;
+  /** Gira até o lugar e pausa a rotação; `seq` permite focar o mesmo lugar de novo. */
+  foco?: { lugar: LugarGlobo; seq: number } | null;
 }
 
 function criarMarcador(lugar: LugarGlobo): HTMLElement {
@@ -143,7 +145,7 @@ function criarMarcador(lugar: LugarGlobo): HTMLElement {
   return raiz;
 }
 
-export function ExploreGlobe({ lugares, onSelect, onAtivoChange }: ExploreGlobeProps) {
+export function ExploreGlobe({ lugares, onSelect, onAtivoChange, foco }: ExploreGlobeProps) {
   const paleta = usePaleta();
   const { ref, width, height } = useTamanho<HTMLDivElement>();
   const globeRef = useRef<GlobeMethods>();
@@ -190,6 +192,21 @@ export function ExploreGlobe({ lugares, onSelect, onAtivoChange }: ExploreGlobeP
     globe.pointOfView({ lat: 18, lng: -40, altitude: 2.35 }, 0);
     setPronto(true);
   }, []);
+
+  useEffect(() => {
+    const globe = globeRef.current;
+    if (!pronto || !foco || !globe) return;
+    const controls = globe.controls();
+    controls.autoRotate = false;
+    globe.pointOfView(
+      { lat: foco.lugar.lat, lng: foco.lugar.lng, altitude: globe.pointOfView().altitude },
+      movimentoReduzido() ? 0 : 1100,
+    );
+    const retomar = window.setTimeout(() => {
+      if (!movimentoReduzido()) controls.autoRotate = true;
+    }, 9000);
+    return () => window.clearTimeout(retomar);
+  }, [pronto, foco]);
 
   // A cada quadro, o lugar mais próximo do centro da vista ganha o cartão com foto.
   useEffect(() => {
