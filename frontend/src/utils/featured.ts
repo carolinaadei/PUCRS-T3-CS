@@ -110,6 +110,63 @@ export function fotoDoDestino(nome: string, fotoUrl: string | null | undefined):
   return fotoUrl || FOTO_POR_NOME.get(normalizar(nome)) || null;
 }
 
+/**
+ * Fotos do Unsplash embutidas em public/fotos/ (licença Unsplash permite).
+ * Em algumas redes o navegador não consegue conectar ao CDN do Unsplash; com as
+ * cópias locais, o globo e as capas da demonstração não dependem dessa conexão.
+ * Nome do arquivo: <id da foto>-mini.jpg (480×360) ou <id>-grande.jpg.
+ */
+const FOTOS_LOCAIS = new Set([
+  '1476514525535-07fb3b4ae5f1-grande.jpg',
+  '1483729558449-99ef09a8c325-grande.jpg',
+  '1483729558449-99ef09a8c325-mini.jpg',
+  '1493976040374-85c8e12f0c0e-grande.jpg',
+  '1493976040374-85c8e12f0c0e-mini.jpg',
+  '1496442226666-8d4d0e62e6e9-grande.jpg',
+  '1496442226666-8d4d0e62e6e9-mini.jpg',
+  '1501555088652-021faa106b9b-grande.jpg',
+  '1501594907352-04cda38ebc29-mini.jpg',
+  '1502602898657-3e91760cbb34-grande.jpg',
+  '1502602898657-3e91760cbb34-mini.jpg',
+  '1506973035872-a4ec16b8e8d9-mini.jpg',
+  '1511895426328-dc8714191300-grande.jpg',
+  '1512453979798-5ea266f8880c-mini.jpg',
+  '1513635269975-59663e0ac1ad-mini.jpg',
+  '1523906834658-6e24ef2386f9-mini.jpg',
+  '1524492412937-b28074a5d7da-mini.jpg',
+  '1528127269322-539801943592-mini.jpg',
+  '1534351590666-13e3e96b5017-grande.jpg',
+  '1534351590666-13e3e96b5017-mini.jpg',
+  '1537996194471-e657df975ab4-mini.jpg',
+  '1539037116277-4db20889f2d4-mini.jpg',
+  '1539635278303-d4002c07eae3-grande.jpg',
+  '1540959733332-eab4deabeeaf-grande.jpg',
+  '1540959733332-eab4deabeeaf-mini.jpg',
+  '1552832230-c0197dd311b5-grande.jpg',
+  '1552832230-c0197dd311b5-mini.jpg',
+  '1570077188670-e3a8d69ac5ff-grande.jpg',
+  '1570077188670-e3a8d69ac5ff-mini.jpg',
+  '1580060839134-75a5edca2e99-mini.jpg',
+  '1585208798174-6cedd86e019a-grande.jpg',
+  '1585208798174-6cedd86e019a-mini.jpg',
+  '1587595431973-160d0d94add1-mini.jpg',
+  '1597212618440-806262de4f6b-mini.jpg',
+]);
+
+/** Troca uma URL do Unsplash pela cópia local, quando existe; senão devolve a original. */
+export function resolverFoto(url: string | null | undefined): string | null | undefined {
+  if (!url) return url;
+  const achado = url.match(/^https:\/\/images\.unsplash\.com\/photo-([\w-]+)(?:\?(.*))?$/);
+  if (!achado) return url;
+  const largura = Number(new URLSearchParams(achado[2] ?? '').get('w') ?? 0);
+  const ordem = largura > 600 ? ['grande', 'mini'] : ['mini', 'grande'];
+  for (const variante of ordem) {
+    const nome = `${achado[1]}-${variante}.jpg`;
+    if (FOTOS_LOCAIS.has(nome)) return `/fotos/${nome}`;
+  }
+  return url;
+}
+
 /** Versão em alta resolução, quando o destino coincide com um lugar de inspiração. */
 export function fotoGrandeDoDestino(nome: string, fotoUrl: string | null | undefined): string | null {
   const inspiracao = FOTO_POR_NOME.get(normalizar(nome));

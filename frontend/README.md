@@ -38,6 +38,42 @@ caem no Mailpit, em <http://localhost:8025>.
 | `npm run preview` | Serve o build de produção, também com o proxy |
 | `npm run typecheck` | Só a checagem de tipos |
 
+### Dados da demonstração
+
+O seed do backend deixa a Ana com 24 viagens genéricas. Para a apresentação, rode uma
+vez, na raiz do repositório e com o `docker compose` no ar:
+
+```powershell
+node frontend/demo/preparar-demo.mjs
+```
+
+O script não altera o backend: importa destinos e atividades novos pelo importador de
+catálogo do próprio backend (`frontend/demo/catalogo-demo.json`, via `docker compose
+exec`) e monta tudo pela API pública, aceitando os convites pelo link real do Mailpit.
+Pode ser executado de novo: apaga as viagens da Ana e recria.
+
+| Viagem da Ana | Situação | Quem vai |
+| --- | --- | --- |
+| Natal em família em Nova York (20–28 dez 2026) | confirmada | Bruno (editor), Carla (visualizadora) |
+| Eurotrip de primavera — Lisboa, Paris, Amsterdã e Roma | planejando | sozinha |
+| Roadtrip pela costa leste dos EUA — Boston a Miami | planejando | Diego (editor), Bruno (visualizador) |
+| Primavera no Japão — Tóquio e Kyoto | concluída | Bruno (editor), Diego (visualizador) |
+| Cancún em família | concluída | Bruno (editor), Carla (visualizadora) |
+| Carnaval em Florianópolis | concluída | Diego (editor), Carla (visualizadora) |
+| Fim de semana em Buenos Aires | concluída | Carla (editora) |
+
+As viagens concluídas têm atividades realizadas e avaliações publicadas, então o ranking
+e os países visitados (Argentina, Brasil, Japão e México) já aparecem preenchidos. Todas
+as contas usam a senha `DemoViaja123!`; Elisa (`vazio.demo`) e Felipe (`descartavel.demo`)
+não são tocados.
+
+### Fotos
+
+As fotos do Unsplash usadas no globo e nas capas ficam também em `public/fotos/`, e o
+componente de foto usa a cópia local quando ela existe: em algumas redes o navegador não
+consegue conectar ao CDN do Unsplash. As demais fotos (Wikimedia Commons e as do seed)
+são carregadas da origem, com duas novas tentativas antes de mostrar um fundo neutro.
+
 ### Por que um proxy
 
 A API não habilita CORS. Em vez de mudar o backend, o Vite atende o frontend e repassa
