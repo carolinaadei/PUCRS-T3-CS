@@ -24,6 +24,7 @@ import {
   FOTOS,
   LUGARES_INSPIRACAO,
   POPULARES,
+  paisDoLugar,
   fotoGrandeDoDestino,
   montarLugaresGlobo,
   type LugarGlobo,
@@ -97,8 +98,8 @@ function Hero() {
                 key={lugar.chave}
                 type="button"
                 className="chip chip-link"
-                title={`${lugar.nome}, ${countryName(lugar.pais)}`}
-                aria-label={`Mostrar ${lugar.nome}, ${countryName(lugar.pais)}, no globo`}
+                title={[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')}
+                aria-label={`Mostrar ${[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')} no globo`}
                 onClick={() => setFoco({ lugar, seq: Date.now() })}
               >
                 <MapPin aria-hidden /> {lugar.nome}
@@ -127,7 +128,7 @@ function Hero() {
             {ativo ? (
               <span className="subhead">
                 <strong>{ativo.nome}</strong>
-                <span className="secondary"> · {countryName(ativo.pais)}</span>
+                {paisDoLugar(ativo) && <span className="secondary"> · {paisDoLugar(ativo)}</span>}
               </span>
             ) : (
               <span className="subhead secondary">Gire o globo para descobrir lugares</span>
