@@ -1,5 +1,7 @@
+import path from 'node:path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
+import { tripadvisor } from './server/tripadvisor';
 
 // O backend (FastAPI) não habilita CORS. Em desenvolvimento, o Vite atende o
 // frontend e repassa /api/* para a API na mesma origem, sem alterar o backend.
@@ -8,7 +10,16 @@ export default defineConfig(({ mode }) => {
   const apiTarget = env.VITE_API_PROXY_TARGET || 'http://localhost:8000';
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      // Avaliações do Tripadvisor: a chave fica no servidor (sem prefixo VITE_,
+      // portanto nunca vai para o navegador).
+      tripadvisor({
+        chave: env.TRIPADVISOR_API_KEY || undefined,
+        baseUrl: env.TRIPADVISOR_BASE_URL || undefined,
+        pastaCache: path.resolve(process.cwd(), '.cache'),
+      }),
+    ],
     server: {
       // O backend gera links de convite e de redefinição de senha para :3000.
       port: 3000,

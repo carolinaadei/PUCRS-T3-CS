@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, Star, TriangleExclamationPoint } from 'lucide-react';
+import { Check, TriangleExclamationPoint } from 'lucide-react';
+import { itemDaAtividade } from '../../api/tripadvisor';
+import { NotaTripadvisor, useNotasTripadvisor } from '../../components/NotaTripadvisor';
 import { mensagemDeErro } from '../../api/client';
 import { atividadesApi, catalogoApi } from '../../api/endpoints';
 import type { AtividadeViagem, DestinoViagem, StatusAtividade } from '../../api/types';
@@ -43,6 +45,7 @@ export function AtividadeSheet({
       catalogoApi.atividades({ destino_catalogo_id: parada.destino_catalogo_id, tamanho_pagina: 100 }),
     enabled: open && !editando,
   });
+  const notas = useNotasTripadvisor((catalogo.data?.itens ?? []).map(itemDaAtividade));
 
   useEffect(() => {
     if (!open) return;
@@ -151,11 +154,14 @@ export function AtividadeSheet({
                     <strong className="subhead truncate">{a.nome}</strong>
                     <span className="footnote secondary row gap-1">
                       <Icone size={13} aria-hidden /> {CATEGORIA_ATIVIDADE[a.categoria]}
-                      {a.media_avaliacoes !== null && (
+                      {notas.data?.[String(a.id)] && (
                         <>
                           {' · '}
-                          <Star size={12} className="star-inline" fill="currentColor" aria-hidden />
-                          {a.media_avaliacoes.toFixed(1)}
+                          <NotaTripadvisor
+                            nota={notas.data[String(a.id)]!.nota}
+                            avaliacoes={notas.data[String(a.id)]!.avaliacoes}
+                            compacta
+                          />
                         </>
                       )}
                     </span>

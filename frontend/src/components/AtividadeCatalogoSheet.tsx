@@ -4,6 +4,13 @@ import { catalogoApi } from '../api/endpoints';
 import { countryName, relativeTime } from '../utils/format';
 import { CATEGORIA_ATIVIDADE } from '../utils/labels';
 import { Avatar, Photo, Sheet, Spinner, Stars } from './ui';
+import { itemDaAtividade } from '../api/tripadvisor';
+import {
+  CreditoTripadvisor,
+  NotaTripadvisor,
+  tripadvisorIndisponivel,
+  useNotasTripadvisor,
+} from './NotaTripadvisor';
 
 /** Detalhe público de uma atividade do catálogo, com média e avaliações recentes. */
 export function AtividadeCatalogoSheet({
@@ -19,6 +26,8 @@ export function AtividadeCatalogoSheet({
     enabled: atividadeId !== null,
   });
   const a = consulta.data;
+  const notas = useNotasTripadvisor(a ? [itemDaAtividade(a)] : []);
+  const notaTa = a ? notas.data?.[String(a.id)] : null;
 
   return (
     <Sheet
@@ -49,21 +58,26 @@ export function AtividadeCatalogoSheet({
                 <MapPin size={16} aria-hidden /> {a.endereco}
               </span>
             )}
-            {a.media_avaliacoes !== null ? (
-              <span className="row gap-2 subhead">
-                <Stars value={a.media_avaliacoes} />
-                <strong className="tabular">{a.media_avaliacoes.toFixed(1)}</strong>
-                <span className="secondary">
-                  ({a.total_avaliacoes} {a.total_avaliacoes === 1 ? 'avaliação' : 'avaliações'})
-                </span>
+            {notaTa ? (
+              <span className="subhead">
+                <NotaTripadvisor
+                  nota={notaTa.nota}
+                  avaliacoes={notaTa.avaliacoes}
+                  icone={notaTa.icone}
+                  url={notaTa.url}
+                />
               </span>
-            ) : (
-              <span className="subhead tertiary">Ainda sem avaliações</span>
-            )}
+            ) : notas.isFetching ? (
+              <span className="skeleton rank-nota-carregando" aria-hidden />
+            ) : tripadvisorIndisponivel(notas.error) ? (
+              <CreditoTripadvisor indisponivel />
+            ) : notas.data ? (
+              <span className="subhead tertiary">Sem nota no Tripadvisor</span>
+            ) : null}
           </div>
 
           <div className="stack gap-3">
-            <h3 className="headline">Avaliações recentes</h3>
+            <h3 className="headline">Avaliações de viajantes do ViajaJunto</h3>
             {a.reviews.length === 0 && (
               <p className="subhead secondary row gap-2">
                 <MessageSquare size={16} aria-hidden /> Quem concluir esta atividade numa viagem

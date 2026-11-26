@@ -8,10 +8,16 @@ import {
   PiggyBank,
   Route,
   Search,
-  Star,
   UserPlus,
 } from 'lucide-react';
 import { catalogoApi } from '../api/endpoints';
+import { agregarNotas, itemDaAtividade } from '../api/tripadvisor';
+import {
+  CreditoTripadvisor,
+  NotaTripadvisor,
+  tripadvisorIndisponivel,
+  useNotasTripadvisor,
+} from '../components/NotaTripadvisor';
 import { ExploreGlobe } from '../components/globe';
 import { Glass, Photo, Segmented } from '../components/ui';
 import { useAuth } from '../state/auth';
@@ -30,15 +36,7 @@ function GlobePlaceholder() {
 
 type Foco = { lugar: LugarGlobo; seq: number } | null;
 
-function Hero({
-  lugares,
-  foco,
-  onFocar,
-}: {
-  lugares: LugarGlobo[];
-  foco: Foco;
-  onFocar: (lugar: LugarGlobo) => void;
-}) {
+function Hero({ lugares, foco }: { lugares: LugarGlobo[]; foco: Foco }) {
   const navigate = useNavigate();
   const { usuario } = useAuth();
   const [busca, setBusca] = useState('');
@@ -81,22 +79,6 @@ function Hero({
               Explorar
             </button>
           </Glass>
-
-          <div className="row wrap gap-2" role="group" aria-label="Destinos populares">
-            <span className="footnote tertiary">Populares:</span>
-            {POPULARES.slice(0, 4).map((lugar) => (
-              <button
-                key={lugar.chave}
-                type="button"
-                className="chip chip-link"
-                title={[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')}
-                aria-label={`Mostrar ${[lugar.nome, paisDoLugar(lugar)].filter(Boolean).join(', ')} no globo`}
-                onClick={() => onFocar(lugar)}
-              >
-                <MapPin aria-hidden /> {lugar.nome}
-              </button>
-            ))}
-          </div>
 
           <div className="row wrap gap-3 hero-ctas">
             <Link to={usuario ? '/viagens' : '/cadastro'} className="btn btn-brand btn-lg">
@@ -239,18 +221,25 @@ function Ranking({
   const noCatalogo = new Map(
     lugares.filter((l) => l.destinoId).map((l) => [l.chave, l.destinoId as number]),
   );
-  // Média e total vêm do ranking público, que agrega as avaliações das atividades.
-  const ranking = useQuery({
-    queryKey: ['catalogo', 'ranking', 50],
-    queryFn: () => catalogoApi.ranking(50),
+  // Nota de cada destino: média, ponderada pelo nº de avaliações, das notas da
+  // Tripadvisor para as atividades do destino no catálogo.
+  const atividades = useQuery({
+    queryKey: ['catalogo', 'atividades', 'todas'],
+    queryFn: () => catalogoApi.atividades({ tamanho_pagina: 100 }),
     staleTime: 5 * 60_000,
   });
-  const notas = new Map(
-    (ranking.data?.itens ?? []).map((i) => [
-      i.destino.id,
-      { media: i.media_avaliacoes, total: i.total_avaliacoes },
-    ]),
-  );
+  const idsPopulares = new Set(noCatalogo.values());
+  const doRanking = (atividades.data?.itens ?? []).filter((a) => idsPopulares.has(a.destino.id));
+  const notasTa = useNotasTripadvisor(doRanking.map(itemDaAtividade));
+  const notas = new Map<number, { nota: number; avaliacoes: number }>();
+  for (const destinoId of idsPopulares) {
+    const agregada = agregarNotas(
+      doRanking
+        .filter((a) => a.destino.id === destinoId)
+        .map((a) => notasTa.data?.[String(a.id)]),
+    );
+    if (agregada) notas.set(destinoId, agregada);
+  }
 
   return (
     <section className="section">
@@ -259,6 +248,7 @@ function Ranking({
           <div className="stack gap-2">
             <span className="eyebrow">Mais populares</span>
             <h2 className="title-1">Destinos que os viajantes amaram.</h2>
+            <CreditoTripadvisor indisponivel={tripadvisorIndisponivel(notasTa.error)} />
           </div>
           <Link to="/explorar" className="btn btn-plain">
             Ver todos <ArrowRight />
@@ -275,7 +265,7 @@ function Ranking({
                   className="rank-row"
                   aria-label={[
                     `${i + 1}º, ${lugar.nome}`,
-                    nota && `nota ${nota.media.toFixed(1)} em ${nota.total} avaliações`,
+                    nota && `nota ${nota.nota.toFixed(1)} no Tripadvisor, em ${nota.avaliacoes} avaliações`,
                     destinoId ? 'abrir o destino' : 'mostrar no globo',
                   ]
                     .filter(Boolean)
@@ -291,39 +281,17 @@ function Ranking({
                     <span className="footnote secondary truncate">{paisDoLugar(lugar) ?? ''}</span>
                   </span>
                   {nota ? (
-                    <span className="row gap-1 subhead" style={{ flex: 'none' }}>
-                      <Star aria-hidden className="star-inline" fill="currentColor" />
-                      <strong className="tabular">{nota.media.toFixed(1).replace('.', ',')}</strong>
-                      <span className="footnote tertiary">({nota.total})</span>
+                    <span className="subhead" style={{ flex: 'none' }}>
+                      <NotaTripadvisor nota={nota.nota} avaliacoes={nota.avaliacoes} compacta />
                     </span>
-                  ) : (
-                    <span className="footnote tertiary" style={{ flex: 'none' }}>
-                      Sem avaliações
-                    </span>
-                  )}
+                  ) : notasTa.isFetching ? (
+                    <span className="skeleton rank-nota-carregando" aria-hidden />
+                  ) : null}
                 </button>
               </li>
             );
           })}
         </ol>
-      </div>
-    </section>
-  );
-}
-
-function ChamadaFinal() {
-  const { usuario } = useAuth();
-  return (
-    <section className="section cta-plain">
-      <div className="container stack gap-4" style={{ alignItems: 'center', textAlign: 'center' }}>
-        <MapPin aria-hidden className="cta-plain-icon" />
-        <h2 className="title-1">Sua próxima viagem começa com um rascunho.</h2>
-        <p className="secondary section-lead">
-          Crie a viagem em segundos e chame quem vai junto quando quiser.
-        </p>
-        <Link to={usuario ? '/viagens' : '/cadastro'} className="btn btn-brand btn-lg">
-          {usuario ? 'Abrir minhas viagens' : 'Criar conta grátis'} <ArrowRight />
-        </Link>
       </div>
     </section>
   );
@@ -349,11 +317,10 @@ export default function Landing() {
 
   return (
     <>
-      <Hero lugares={lugares} foco={foco} onFocar={(l) => setFoco({ lugar: l, seq: Date.now() })} />
+      <Hero lugares={lugares} foco={foco} />
       <JeitosDeViajar />
       <ComoFunciona />
       <Ranking lugares={lugares} onFocar={focar} />
-      <ChamadaFinal />
     </>
   );
 }

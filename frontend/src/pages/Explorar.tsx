@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Compass, MapPin, Search, Sparkles, Star, Ticket } from 'lucide-react';
+import { Compass, MapPin, Search, Sparkles, Ticket } from 'lucide-react';
 import { catalogoApi } from '../api/endpoints';
 import type { CategoriaAtividade, CategoriaDestino } from '../api/types';
 import { AtividadeCatalogoSheet } from '../components/AtividadeCatalogoSheet';
+import { itemDaAtividade } from '../api/tripadvisor';
+import {
+  CreditoTripadvisor,
+  NotaTripadvisor,
+  tripadvisorIndisponivel,
+  useNotasTripadvisor,
+} from '../components/NotaTripadvisor';
 import { Empty, Glass, Photo, Segmented } from '../components/ui';
 import { fotoDoDestino, fotoGrandeDoDestino } from '../utils/featured';
 import { countryName } from '../utils/format';
@@ -118,17 +125,15 @@ function Destinos({ busca }: { busca: string }) {
 
 function Atividades({ busca }: { busca: string }) {
   const [categoria, setCategoria] = useState<CategoriaAtividade | ''>('');
-  const [notaMinima, setNotaMinima] = useState<number | ''>('');
   const [aberta, setAberta] = useState<number | null>(null);
   const termo = useDebounced(busca.trim(), 300);
 
   const consulta = useInfiniteQuery({
-    queryKey: ['catalogo', 'atividades', 'lista', termo, categoria, notaMinima],
+    queryKey: ['catalogo', 'atividades', 'lista', termo, categoria],
     queryFn: ({ pageParam }) =>
       catalogoApi.atividades({
         localizacao: termo || undefined,
         categoria: categoria || undefined,
-        nota_minima: notaMinima || undefined,
         pagina: pageParam,
         tamanho_pagina: 24,
       }),
@@ -137,24 +142,14 @@ function Atividades({ busca }: { busca: string }) {
   });
 
   const itens = consulta.data?.pages.flatMap((p) => p.itens) ?? [];
+  // Notas da Tripadvisor para as atividades carregadas, numa única chamada.
+  const notas = useNotasTripadvisor(itens.map(itemDaAtividade));
 
   return (
     <div className="stack gap-5">
       <div className="row wrap gap-4 between">
         <ChipsFiltro valor={categoria} opcoes={CATEGORIA_ATIVIDADE} onChange={setCategoria} rotulo="Tipo" />
-        <label className="row gap-2 subhead secondary">
-          Nota mínima
-          <select
-            className="select select-compact"
-            value={notaMinima}
-            onChange={(e) => setNotaMinima(e.target.value ? Number(e.target.value) : '')}
-          >
-            <option value="">Qualquer</option>
-            <option value="3">3+</option>
-            <option value="4">4+</option>
-            <option value="4.5">4,5+</option>
-          </select>
-        </label>
+        <CreditoTripadvisor indisponivel={tripadvisorIndisponivel(notas.error)} />
       </div>
 
       {consulta.isLoading ? (
@@ -185,17 +180,23 @@ function Atividades({ busca }: { busca: string }) {
                 <span className="footnote secondary truncate">
                   {a.destino.nome}, {countryName(a.destino.pais_codigo)}
                 </span>
-                <span className="footnote row gap-1">
-                  {a.media_avaliacoes !== null ? (
-                    <>
-                      <Star size={13} className="star-inline" fill="currentColor" aria-hidden />
-                      <strong className="tabular">{a.media_avaliacoes.toFixed(1)}</strong>
-                      <span className="tertiary">({a.total_avaliacoes})</span>
-                    </>
-                  ) : (
-                    <span className="tertiary">Sem avaliações</span>
-                  )}
-                </span>
+                {(() => {
+                  const nota = notas.data?.[String(a.id)];
+                  if (nota) {
+                    return (
+                      <span className="footnote">
+                        <NotaTripadvisor
+                          nota={nota.nota}
+                          avaliacoes={nota.avaliacoes}
+                          icone={nota.icone}
+                          compacta
+                        />
+                      </span>
+                    );
+                  }
+                  if (notas.isFetching) return <span className="skeleton rank-nota-carregando" aria-hidden />;
+                  return notas.data ? <span className="footnote tertiary">Sem nota no Tripadvisor</span> : null;
+                })()}
               </span>
             </Glass>
           ))}

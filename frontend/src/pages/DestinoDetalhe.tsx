@@ -1,7 +1,14 @@
 import { Suspense, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, MapPin, Plus, Star, Ticket } from 'lucide-react';
+import { ChevronLeft, MapPin, Plus, Ticket } from 'lucide-react';
+import { agregarNotas, itemDaAtividade } from '../api/tripadvisor';
+import {
+  CreditoTripadvisor,
+  NotaTripadvisor,
+  tripadvisorIndisponivel,
+  useNotasTripadvisor,
+} from '../components/NotaTripadvisor';
 import { catalogoApi } from '../api/endpoints';
 import { AtividadeCatalogoSheet } from '../components/AtividadeCatalogoSheet';
 import { TripGlobe, type ParadaGlobo } from '../components/globe';
@@ -55,6 +62,9 @@ export default function DestinoDetalhe() {
     ];
   }, [destino.data]);
 
+  // Notas da Tripadvisor das atividades; a do destino é a média ponderada delas.
+  const notas = useNotasTripadvisor((atividades.data?.itens ?? []).map(itemDaAtividade));
+
   if (destino.isLoading) return <PageLoader />;
   if (!destino.data) {
     return (
@@ -74,12 +84,7 @@ export default function DestinoDetalhe() {
 
   const d = destino.data;
   const lista = atividades.data?.itens ?? [];
-  const avaliadas = lista.filter((a) => a.media_avaliacoes !== null);
-  const media =
-    avaliadas.length > 0
-      ? avaliadas.reduce((s, a) => s + (a.media_avaliacoes ?? 0) * a.total_avaliacoes, 0) /
-        avaliadas.reduce((s, a) => s + a.total_avaliacoes, 0)
-      : null;
+  const notaDestino = agregarNotas(lista.map((a) => notas.data?.[String(a.id)]));
 
   const adicionar = () => {
     if (!usuario) {
@@ -100,9 +105,10 @@ export default function DestinoDetalhe() {
         <Glass lg className="dest-hero-panel">
           <div className="row wrap gap-2">
             <span className="chip chip-glass">{CATEGORIA_DESTINO[d.categoria]}</span>
-            {media !== null && (
+            {notaDestino && (
               <span className="chip chip-glass">
-                <Star aria-hidden fill="currentColor" className="star-inline" /> {media.toFixed(1)}
+                <NotaTripadvisor nota={notaDestino.nota} avaliacoes={notaDestino.avaliacoes} compacta />
+                <span>no Tripadvisor</span>
               </span>
             )}
           </div>
@@ -126,9 +132,9 @@ export default function DestinoDetalhe() {
           )}
 
           <section className="stack gap-4">
-            <div className="row between">
+            <div className="row between wrap gap-2">
               <h2 className="title-3">O que fazer</h2>
-              <span className="footnote secondary">{lista.length} atividades</span>
+              <CreditoTripadvisor indisponivel={tripadvisorIndisponivel(notas.error)} />
             </div>
             {atividades.isLoading && <div className="skeleton" style={{ height: 240 }} />}
             {!atividades.isLoading && lista.length === 0 && (
@@ -152,16 +158,22 @@ export default function DestinoDetalhe() {
                       {a.endereco ? ` · ${a.endereco}` : ''}
                     </span>
                   </span>
-                  <span className="footnote row gap-1" style={{ flex: 'none' }}>
-                    {a.media_avaliacoes !== null ? (
-                      <>
-                        <Star size={13} className="star-inline" fill="currentColor" aria-hidden />
-                        <strong className="tabular">{a.media_avaliacoes.toFixed(1)}</strong>
-                        <span className="tertiary">({a.total_avaliacoes})</span>
-                      </>
-                    ) : (
-                      <span className="tertiary">Novo</span>
-                    )}
+                  <span className="footnote" style={{ flex: 'none' }}>
+                    {(() => {
+                      const nota = notas.data?.[String(a.id)];
+                      if (nota) {
+                        return (
+                          <NotaTripadvisor
+                            nota={nota.nota}
+                            avaliacoes={nota.avaliacoes}
+                            icone={nota.icone}
+                            compacta
+                          />
+                        );
+                      }
+                      if (notas.isFetching) return <span className="skeleton rank-nota-carregando" aria-hidden />;
+                      return null;
+                    })()}
                   </span>
                 </button>
               ))}
