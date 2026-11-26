@@ -14,6 +14,7 @@ import {
 import { createPortal } from 'react-dom';
 import { ImageOff, LoaderCircle, MapPin, Star, X } from 'lucide-react';
 import { avatarGradient, initials } from '../utils/format';
+import { resolverFoto } from '../utils/featured';
 
 /* ───────────── Glass ───────────── */
 
@@ -196,6 +197,8 @@ export function Avatar({
 
 /* ───────────── Foto com fallback ───────────── */
 
+export const TENTATIVAS_FOTO = 2;
+
 export function Photo({
   src,
   alt,
@@ -209,18 +212,31 @@ export function Photo({
   style?: React.CSSProperties;
   eager?: boolean;
 }) {
+  const url = resolverFoto(src);
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
+  // Em redes instáveis a 1ª tentativa pode cair; recria o <img> mais duas vezes.
+  const [tentativa, setTentativa] = useState(0);
+  const timer = useRef<number>();
+  useEffect(() => {
+    setFailed(false);
+    setTentativa(0);
+    return () => window.clearTimeout(timer.current);
+  }, [src]);
+  const aoFalhar = () => {
+    if (tentativa >= TENTATIVAS_FOTO) return setFailed(true);
+    timer.current = window.setTimeout(() => setTentativa((t) => t + 1), 800 * (tentativa + 1));
+  };
   return (
     <div className={`media ${className}`} style={style}>
-      {src && !failed ? (
+      {url && !failed ? (
         <img
-          src={src}
+          key={tentativa}
+          src={url}
           alt={alt}
           loading={eager ? 'eager' : 'lazy'}
           decoding="async"
           referrerPolicy="no-referrer"
-          onError={() => setFailed(true)}
+          onError={aoFalhar}
         />
       ) : (
         <div className="media-fallback" role="img" aria-label={alt}>

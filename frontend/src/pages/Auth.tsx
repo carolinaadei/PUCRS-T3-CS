@@ -6,9 +6,9 @@ import { authApi } from '../api/endpoints';
 import { Field, Glass, LoadingButton } from '../components/ui';
 import { useAuth } from '../state/auth';
 import { useToast } from '../state/toast';
-import { unsplash } from '../utils/featured';
+import { resolverFoto, unsplash } from '../utils/featured';
 
-const FOTO_AUTH = unsplash('1570077188670-e3a8d69ac5ff', 1200, 1500);
+const FOTO_AUTH = resolverFoto(unsplash('1570077188670-e3a8d69ac5ff', 1200, 1500)) ?? undefined;
 
 function AuthShell({
   titulo,

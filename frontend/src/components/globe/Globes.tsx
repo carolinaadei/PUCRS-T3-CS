@@ -3,7 +3,7 @@ import Globe, { type GlobeMethods } from 'react-globe.gl';
 import { MeshPhongMaterial } from 'three';
 import { useTema } from '../../state/theme';
 import { countryName, formatDate } from '../../utils/format';
-import type { LugarGlobo } from '../../utils/featured';
+import { resolverFoto, type LugarGlobo } from '../../utils/featured';
 import {
   alpha2DoPais,
   corTerra,
@@ -113,13 +113,23 @@ function criarMarcador(lugar: LugarGlobo): HTMLElement {
 
   const cartao = document.createElement('div');
   cartao.className = `gm-card${lugar.destinoId ? ' is-link' : ''}`;
-  const img = document.createElement('img');
-  img.alt = '';
-  img.loading = 'lazy';
-  img.decoding = 'async';
-  img.referrerPolicy = 'no-referrer';
-  img.src = lugar.foto;
-  img.addEventListener('error', () => cartao.classList.add('no-photo'));
+  // Mesma política do componente Photo: em erro, um <img> novo, até duas vezes.
+  let tentativas = 0;
+  const novaImagem = (): HTMLImageElement => {
+    const el = document.createElement('img');
+    el.alt = '';
+    el.loading = 'lazy';
+    el.decoding = 'async';
+    el.referrerPolicy = 'no-referrer';
+    el.addEventListener('error', () => {
+      if (tentativas >= 2) return cartao.classList.add('no-photo');
+      tentativas += 1;
+      window.setTimeout(() => el.replaceWith(novaImagem()), 800 * tentativas);
+    });
+    el.src = resolverFoto(lugar.foto) ?? lugar.foto;
+    return el;
+  };
+  const img = novaImagem();
   const meta = document.createElement('div');
   meta.className = 'gm-meta';
   const nome = document.createElement('strong');
